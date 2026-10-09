@@ -1,7 +1,7 @@
 // Franzis Schulapp – Service Worker
 // App-Dateien werden beim Installieren gespeichert, damit die App offline startet.
 // Bei jeder Änderung an index.html o. Ä. VERSION erhöhen – dann holt sich die App das Update.
-const VERSION = 'v4';
+const VERSION = 'v5';
 const APP_CACHE = 'notenrechner-app-' + VERSION;
 const RUNTIME_CACHE = 'notenrechner-runtime';
 
