@@ -98,6 +98,7 @@
   [hidden] { display: none !important; }
   html { font-size: 100%; -webkit-text-size-adjust: 100%; }
   body {
+    min-height: 100vh; min-height: 100lvh;
     margin: 0;
     background: var(--bg);
     color: var(--label);
@@ -354,7 +355,7 @@
   [data-theme="dark"] .sheet .danger-btn { background: #2c2c2e; }
 
   /* ---------- Tab-Leiste (Material, unten) ---------- */
-  :root { --tabbar-h: 3.5rem; }
+  :root { --tabbar-h: 3.5rem; --row-h: 3.75rem; --add-h: 3.25rem; }
   main.view { padding-bottom: calc(var(--tabbar-h) + 2.5rem + env(safe-area-inset-bottom)) !important; }
   .view.fade-in { animation: viewIn .28s ease-out; }
   @keyframes viewIn { from { opacity: 0; } to { opacity: 1; } }
@@ -394,7 +395,7 @@
 
   .lesson-row {
     width: 100%; display: flex; align-items: stretch; gap: .875rem; border: 0; background: none; text-align: left;
-    padding: .625rem 1rem; min-height: 3.5rem; position: relative; transition: background-color .1s ease-out;
+    padding: .5rem 1rem; height: var(--row-h); position: relative; transition: background-color .1s ease-out;
   }
   .lesson-row + .lesson-row::before { content: ""; position: absolute; top: 0; left: 4.75rem; right: 0; border-top: .5px solid var(--sep); }
   .lesson-row:active { background: var(--fill); }
@@ -404,12 +405,31 @@
   .l-time small { font-size: .75rem; color: var(--label-2); line-height: 1.25; letter-spacing: .01em; }
   .l-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: .625rem; }
   .l-bar { width: .25rem; align-self: stretch; border-radius: 99px; background: var(--lc); flex: none; }
-  .l-text { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em; }
+  .l-text { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l-body > span:not(.l-bar):not(.l-badge) { min-width: 0; }
   .l-text.free { color: var(--label-3); font-weight: 400; }
   .l-sub { display: block; font-size: .8125rem; color: var(--label-2); margin-top: .0625rem; }
-  .lesson-row.allday { min-height: 4.5rem; }
+  /* Ganztägig: genauso hoch wie ein normaler Tag (Stunden + Zeile „Ganztägiger Termin“), damit nichts springt */
+  .allday-grid {
+    display: grid; grid-template-columns: 4.875rem 1fr;
+    grid-template-rows: repeat(var(--rows, 6), var(--row-h)) var(--add-h);
+  }
+  .ad-time { grid-column: 1; padding-left: 1rem; position: relative; }
+  .ad-time + .ad-time::before { content: ""; position: absolute; top: 0; left: 1rem; right: 0; border-top: .5px solid var(--sep); }
+  .ad-block {
+    grid-column: 2; grid-row: 1 / span var(--rows, 6); margin: .375rem 1rem .375rem 0;
+    border: 0; border-radius: .75rem; text-align: left; position: relative;
+    padding: .75rem 1rem .75rem 1.125rem; display: flex; flex-direction: column; align-items: flex-start; gap: .125rem;
+    background: color-mix(in srgb, var(--lc) 18%, transparent); box-shadow: inset 4px 0 0 var(--lc);
+    transition: background-color .1s ease-out, transform .1s ease-out;
+  }
+  .ad-block:active { background: color-mix(in srgb, var(--lc) 26%, transparent); }
+  .ad-block .l-text { font-size: 1.125rem; white-space: normal; }
+  .ad-block .l-badge { position: absolute; top: .75rem; right: .75rem; }
+  .ad-foot { grid-column: 1 / -1; }
+  .ad-foot::before { content: ""; position: absolute; top: 0; left: 1rem; right: 0; border-top: .5px solid var(--sep); }
   .lesson-row.add .l-text { color: var(--accent); font-weight: 500; font-size: .9375rem; }
-  .lesson-row.add { min-height: 3rem; }
+  .lesson-row.add { height: var(--add-h); }
   .l-badge { margin-left: auto; font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #fff; background: var(--accent); padding: .1875rem .5rem; border-radius: 99px; }
 
   .week-wrap { overflow: hidden; }
@@ -2789,18 +2809,33 @@
       pl.dayList.innerHTML = '';
       const note = dayNote(p, d);
       if (note) {
-        const b = document.createElement('button');
-        b.className = 'lesson-row allday';
+        // Wie in der Wochenübersicht: Zeiten links, ein langer Block über alle Stunden
+        const grid = document.createElement('div');
+        grid.className = 'allday-grid';
+        grid.style.setProperty('--rows', rows.length);
+        rows.forEach((i, k) => {
+          const tc = document.createElement('div');
+          tc.className = 'l-time ad-time';
+          tc.style.gridRow = String(k + 1);
+          tc.innerHTML = '<b>' + (i + 1) + '</b><small>' + esc((p.periods[i] || {}).start || '') + '</small>';
+          grid.appendChild(tc);
+        });
         const isNow = info.kind === 'now' && info.note && info.d === d && d === t;
-        b.classList.toggle('now', !!isNow);
-        b.innerHTML = '<span class="l-time"><small>ganzer</small><small>Tag</small></span>'
-          + '<span class="l-body"><span class="l-bar"></span><span><span class="l-text"></span><small class="l-sub"></small></span>'
-          + (isNow ? '<span class="l-badge">Jetzt</span>' : '') + '</span>';
-        b.style.setProperty('--lc', colorOf(note.color));
-        b.querySelector('.l-text').textContent = note.text;
-        b.querySelector('.l-sub').textContent = span(note);
-        b.addEventListener('click', () => openDayNoteSheet(d));
-        pl.dayList.appendChild(b);
+        const blk = document.createElement('button');
+        blk.className = 'ad-block';
+        blk.style.setProperty('--lc', colorOf(note.color));
+        blk.innerHTML = '<span class="l-text"></span><small class="l-sub"></small>' + (isNow ? '<span class="l-badge">Jetzt</span>' : '');
+        blk.querySelector('.l-text').textContent = note.text;
+        blk.querySelector('.l-sub').textContent = span(note);
+        blk.setAttribute('aria-label', DAY_NAMES[d] + ': ' + note.text + ', ' + span(note));
+        blk.addEventListener('click', () => openDayNoteSheet(d));
+        grid.appendChild(blk);
+        const edit = document.createElement('button');
+        edit.className = 'lesson-row add ad-foot';
+        edit.innerHTML = '<span class="l-time"></span><span class="l-body"><span class="l-text">Termin bearbeiten</span></span>';
+        edit.addEventListener('click', () => openDayNoteSheet(d));
+        grid.appendChild(edit);
+        pl.dayList.appendChild(grid);
       }
       if (!note) rows.forEach((i) => {
         const c = cellAt(p, d, i), per0 = p.periods[i] || {};
