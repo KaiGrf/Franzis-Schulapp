@@ -1,7 +1,7 @@
 {
-  "name": "Notenrechner",
-  "short_name": "Notenrechner",
-  "description": "Punkte eingeben, Note sehen – mit Klassen, Arbeiten und Notentabelle.",
+  "name": "Franzis Schulapp",
+  "short_name": "Schulapp",
+  "description": "Stundenplan und Notenrechner – mit Klassen, Arbeiten und Notentabellen.",
   "lang": "de",
   "id": "./",
   "start_url": "./",

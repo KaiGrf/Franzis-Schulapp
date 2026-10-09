@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Notenrechner</title>
+<title>Franzis Schulapp</title>
 <!-- Als App installierbar (iPhone: Teilen → „Zum Home-Bildschirm“, Windows: Edge/Chrome → „App installieren“) -->
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="application-name" content="Notenrechner">
-<meta name="apple-mobile-web-app-title" content="Notenrechner">
+<meta name="application-name" content="Franzis Schulapp">
+<meta name="apple-mobile-web-app-title" content="Franzis Schulapp">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -95,6 +95,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { font-size: 100%; -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
@@ -236,6 +237,7 @@
   .error-msg { color: var(--danger); font-size: .8125rem; line-height: 1.38; letter-spacing: .005em; padding: 0 1rem .625rem; }
   .points-card .error-msg { padding: .5rem .25rem 0; }
   .error-msg:empty { display: none; }
+  .section-foot { margin: .5rem 1rem 0; font-size: .8125rem; line-height: 1.38; letter-spacing: .005em; color: var(--label-2); }
   .seg-hint { margin: -.25rem 1rem .75rem; font-size: .8125rem; line-height: 1.38; letter-spacing: .005em; color: var(--label-2); }
   .seg-hint:empty { display: none; }
 
@@ -350,6 +352,120 @@
   .sheet-note { margin: -.5rem 1rem 0; font-size: .8125rem; line-height: 1.38; color: var(--label-2); }
   .danger-btn { width: 100%; border: 0; background: var(--card); color: var(--danger); padding: .875rem; border-radius: var(--radius); font-size: 1.0625rem; }
   [data-theme="dark"] .sheet .danger-btn { background: #2c2c2e; }
+
+  /* ---------- Tab-Leiste (Material, unten) ---------- */
+  :root { --tabbar-h: 3.5rem; }
+  main.view { padding-bottom: calc(var(--tabbar-h) + 2.5rem + env(safe-area-inset-bottom)) !important; }
+  .view.fade-in { animation: viewIn .28s ease-out; }
+  @keyframes viewIn { from { opacity: 0; } to { opacity: 1; } }
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--material);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-top: .5px solid var(--sep);
+  }
+  .tabbar-inner { max-width: 36rem; margin: 0 auto; height: var(--tabbar-h); display: grid; grid-template-columns: 1fr 1fr; }
+  .tab {
+    border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .125rem;
+    color: var(--label-2); font-size: .625rem; font-weight: 600; letter-spacing: .01em;
+    transition: color .15s, transform .1s ease-out;
+  }
+  .tab:active { transform: scale(.92); }
+  .tab svg { width: 1.5rem; height: 1.5rem; }
+  .tab[aria-selected="true"] { color: var(--accent); }
+  @media (min-width: 40rem) {
+    .tab { flex-direction: row; gap: .5rem; font-size: .8125rem; }
+    .tab svg { width: 1.25rem; height: 1.25rem; }
+  }
+
+  /* ---------- Stundenplan ---------- */
+  .now-card {
+    --nc: var(--accent);
+    border-radius: 1.375rem; padding: 1.125rem 1.25rem 1.25rem;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--nc) 22%, var(--card)), var(--card) 75%);
+    box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .now-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: .3125rem; background: var(--nc); }
+  .now-k { font-size: .8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--nc); }
+  .now-v { font-family: var(--font-display); font-size: 2rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin-top: .25rem; }
+  .now-s { color: var(--label-2); font-size: .9375rem; margin-top: .25rem; font-variant-numeric: tabular-nums; }
+  .now-card.quiet .now-v { font-size: 1.375rem; }
+
+  .lesson-row {
+    width: 100%; display: flex; align-items: stretch; gap: .875rem; border: 0; background: none; text-align: left;
+    padding: .625rem 1rem; min-height: 3.5rem; position: relative; transition: background-color .1s ease-out;
+  }
+  .lesson-row + .lesson-row::before { content: ""; position: absolute; top: 0; left: 4.75rem; right: 0; border-top: .5px solid var(--sep); }
+  .lesson-row:active { background: var(--fill); }
+  .lesson-row.now { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .l-time { width: 3rem; flex: none; display: flex; flex-direction: column; justify-content: center; font-variant-numeric: tabular-nums; }
+  .l-time b { font-size: 1.0625rem; font-weight: 700; }
+  .l-time small { font-size: .75rem; color: var(--label-2); line-height: 1.25; letter-spacing: .01em; }
+  .l-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: .625rem; }
+  .l-bar { width: .25rem; align-self: stretch; border-radius: 99px; background: var(--lc); flex: none; }
+  .l-text { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em; }
+  .l-text.free { color: var(--label-3); font-weight: 400; }
+  .l-sub { display: block; font-size: .8125rem; color: var(--label-2); margin-top: .0625rem; }
+  .lesson-row.allday { min-height: 4.5rem; }
+  .lesson-row.add .l-text { color: var(--accent); font-weight: 500; font-size: .9375rem; }
+  .lesson-row.add { min-height: 3rem; }
+  .l-badge { margin-left: auto; font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #fff; background: var(--accent); padding: .1875rem .5rem; border-radius: 99px; }
+
+  .week-wrap { overflow: hidden; }
+  .week-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+  .week { width: 100%; min-width: 30rem; border-collapse: collapse; table-layout: fixed; }
+  .week th { text-align: center; padding: .625rem .25rem .5rem; }
+  .week th:first-child { width: 3.5rem; }
+  .week th:last-child, .week td:last-child { padding-right: .625rem; }
+  .week td:first-child { padding-left: .5rem; }
+  .week td { padding: .25rem; border-top: .5px solid var(--sep); vertical-align: middle; text-align: center !important; font-size: .8125rem; }
+  .week td:first-child { font-variant-numeric: tabular-nums; color: var(--label-2); font-size: .75rem; line-height: 1.2; }
+  .week td:first-child b { display: block; color: var(--label); font-size: .9375rem; }
+  .week th.today { color: var(--accent); }
+  .wk-cell {
+    width: 100%; min-height: 2.75rem; border: 0; border-radius: .5rem; padding: .3125rem .375rem;
+    background: transparent; font-size: .8125rem; font-weight: 600; line-height: 1.2; letter-spacing: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .125rem;
+    text-align: center; transition: background-color .1s; overflow: hidden;
+  }
+  /* Lange Wörter (z. B. „Mentorenstunde“) sauber umbrechen statt überlappen */
+  .wk-cell { container-type: inline-size; }
+  /* Schrift passt sich der Zellbreite an, damit das längste Wort hineinpasst (--len = Zeichen des längsten Worts) */
+  .wk-cell span { max-width: 100%; -webkit-hyphens: auto; hyphens: auto; font-size: min(.8125rem, calc(100cqi / (var(--len, 6) * .56))); }
+  .wk-cell small { font-size: .6875rem; font-weight: 500; color: var(--label-2); }
+  td.allday { height: 1px; padding: .375rem .25rem; }
+  .wk-cell.allday { height: 100%; font-size: .875rem; }
+  .wk-cell:hover { background: var(--fill); }
+  .wk-cell.filled { background: color-mix(in srgb, var(--lc) 18%, transparent); box-shadow: inset 3px 0 0 var(--lc); }
+  .wk-cell.now { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .draft-card .row-label small { margin-top: .125rem; }
+
+  /* Farbwahl im Bearbeiten-Sheet */
+  .swatches { display: flex; flex-wrap: wrap; gap: .75rem; padding: .875rem 1rem; }
+  .swatch {
+    width: 2.25rem; height: 2.25rem; border-radius: 50%; border: 0; background: var(--sw);
+    box-shadow: inset 0 0 0 .5px rgba(0,0,0,.12); position: relative; transition: transform .1s ease-out;
+  }
+  .swatch:active { transform: scale(.9); }
+  .swatch[aria-checked="true"]::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2.5px solid var(--sw);
+  }
+  .swatch.none { background: var(--fill); }
+  .swatch.none::before { content: ""; position: absolute; left: 50%; top: 20%; bottom: 20%; width: 2px; background: var(--label-3); transform: rotate(45deg); }
+  .swatch.none[aria-checked="true"]::after { border-color: var(--label-3); }
+  .suggest { display: flex; flex-wrap: wrap; gap: .5rem; padding: .75rem 1rem; }
+  .suggest button {
+    border: 0; border-radius: 99px; padding: .375rem .75rem; font-size: .9375rem; font-weight: 600;
+    background: color-mix(in srgb, var(--lc) 18%, transparent); box-shadow: inset 3px 0 0 var(--lc);
+  }
+  .time-row { display: grid; grid-template-columns: 4.5rem 1fr auto 1fr; gap: .5rem; align-items: center; padding: .375rem 1rem; }
+  .time-row input {
+    width: 100%; min-width: 0; border: 0; outline: 0; border-radius: .5rem; background: var(--fill);
+    padding: .5rem; font-size: 1rem; font-variant-numeric: tabular-nums; text-align: center;
+  }
+  .time-row span { color: var(--label-2); }
 
   /* Aufklappbarer Notenspiegel */
   .disclosure {
@@ -577,7 +693,7 @@
 
   /* ---------- Toast mit „Widerrufen“ (wischbar) ---------- */
   .toast {
-    position: fixed; left: 50%; bottom: max(1.25rem, env(safe-area-inset-bottom));
+    position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + .75rem + env(safe-area-inset-bottom));
     z-index: 60; width: min(26rem, calc(100% - 2rem));
     display: flex; align-items: center; gap: .75rem;
     padding: .75rem .75rem .75rem 1.125rem; border-radius: 1.125rem;
@@ -646,11 +762,11 @@
 <input type="file" id="backupInput" accept="application/json,.json" hidden>
 
 <div class="large-title" id="largeTitle">
-  <h1>Notenrechner</h1>
-  <p>Punkte eingeben, Note sehen.</p>
+  <h1 id="bigTitle">Notenrechner</h1>
+  <p id="bigSub">Punkte eingeben, Note sehen.</p>
 </div>
 
-<main>
+<main id="viewGrades" class="view">
   <!-- Klasse & Arbeit: oben, als Pop-up-Knöpfe -->
   <nav class="ctx-bar" id="ctxBar" aria-label="Klasse und Arbeit">
     <button class="pill press" id="classBtn" aria-haspopup="menu" aria-expanded="false">
@@ -856,6 +972,67 @@
     </div></div>
   </section>
 </main>
+
+<!-- ===================== Stundenplan ===================== -->
+<main id="viewPlan" class="view" hidden>
+  <nav class="ctx-bar" aria-label="Stundenplan auswählen">
+    <button class="pill press" id="planBtn" aria-haspopup="menu" aria-expanded="false">
+      <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+      <span class="pill-text"><span class="pill-k">Stundenplan</span><span class="pill-v" id="planBtnV">–</span></span>
+      <svg class="chev-ud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9 4-4 4 4M8 15l4 4 4-4"/></svg>
+    </button>
+  </nav>
+
+  <!-- Entwurf aus Foto: prüfen -->
+  <section class="card draft-card" id="draftCard" hidden>
+    <div class="ed-preview" id="draftPreview" hidden><img id="draftImg" alt="Hochgeladener Stundenplan"></div>
+    <div class="row">
+      <div class="row-label"><div id="draftTitle">Aus Foto erkannt</div><small id="draftStatus">Bitte mit dem Bild vergleichen. Zum Korrigieren auf eine Stunde tippen.</small></div>
+    </div>
+    <div class="ed-progress" id="draftProgress" hidden><div id="draftBar"></div></div>
+    <div class="ed-actions" id="draftActions">
+      <button class="btn secondary press" id="draftDiscard">Verwerfen</button>
+      <button class="btn primary press" id="draftKeep">Übernehmen</button>
+    </div>
+  </section>
+
+  <!-- Jetzt / Als Nächstes -->
+  <section class="now-card" id="nowCard" aria-live="polite">
+    <div class="now-k" id="nowK">Jetzt</div>
+    <div class="now-v" id="nowV">–</div>
+    <div class="now-s" id="nowS"></div>
+  </section>
+
+  <section>
+    <div class="segmented" id="daySeg" role="radiogroup" aria-label="Tag" style="margin:0 0 .75rem">
+      <div class="seg-indicator"></div>
+      <button role="radio" data-v="0">Mo</button>
+      <button role="radio" data-v="1">Di</button>
+      <button role="radio" data-v="2">Mi</button>
+      <button role="radio" data-v="3">Do</button>
+      <button role="radio" data-v="4">Fr</button>
+      <button role="radio" data-v="week">Woche</button>
+    </div>
+    <div class="card" id="dayList"></div>
+    <div class="card week-wrap" id="weekWrap" hidden><div class="week-scroll"><table class="week" id="weekTable"></table></div></div>
+    <p class="section-foot" id="planFoot">Zum Bearbeiten auf eine Stunde tippen.</p>
+  </section>
+</main>
+
+<!-- Tab-Leiste -->
+<nav class="tabbar" id="tabbar" aria-label="Bereiche">
+  <div class="tabbar-inner" role="tablist">
+    <button class="tab" role="tab" data-view="plan" id="tabPlan" aria-controls="viewPlan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
+      <span>Stundenplan</span>
+    </button>
+    <button class="tab" role="tab" data-view="grades" id="tabGrades" aria-controls="viewGrades">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m8.5 14.5 2.5 2.5 4.5-5"/></svg>
+      <span>Noten</span>
+    </button>
+  </div>
+</nav>
+<input type="file" id="planFileInput" accept="image/*,.csv,.txt,text/csv,text/plain" hidden>
 
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="scrim" id="scrim"></div>
@@ -2366,7 +2543,15 @@
       });
       return c;
     });
-    return { v: 2, classes: result, deleted };
+    // Stundenpläne: pro Plan gewinnt die neuere Fassung
+    const plans = (a.plans || []).map(clone);
+    (b.plans || []).forEach((p2) => {
+      if (p2.draft) return;
+      const k = plans.findIndex((x) => x.id === p2.id);
+      if (k < 0) plans.push(clone(p2));
+      else if ((p2.at || 0) > (plans[k].at || 0)) plans[k] = clone(p2);
+    });
+    return { v: 2, classes: result, deleted, plans: plans.filter((x) => !gone(x.id, x.at)) };
   }
 
   function stats(b) {
@@ -2377,12 +2562,12 @@
   async function exportBackup() {
     const d = new Date();
     const stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const data = JSON.stringify({ app: 'Notenrechner', exported: d.toISOString(), book }, null, 1);
-    const file = new File([data], 'Notenrechner-Sicherung-' + stamp + '.json', { type: 'application/json' });
+    const data = JSON.stringify({ app: 'Franzis Schulapp', exported: d.toISOString(), book }, null, 1);
+    const file = new File([data], 'Schulapp-Sicherung-' + stamp + '.json', { type: 'application/json' });
     // Auf iPhone/iPad über das Teilen-Menü („In Dateien sichern“ → iCloud Drive), am Computer als Download
     const touch = matchMedia('(pointer: coarse)').matches;
     if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'Notenrechner-Sicherung' }); return; }
+      try { await navigator.share({ files: [file], title: 'Schulapp-Sicherung' }); return; }
       catch (e) { if (e.name === 'AbortError') return; }
     }
     const a = document.createElement('a');
@@ -2401,15 +2586,15 @@
         incoming = parsed.book || parsed;
         if (!incoming || !Array.isArray(incoming.classes)) throw new Error();
       } catch (e) {
-        toast.show('Das ist keine Notenrechner-Sicherung.');
+        toast.show('Das ist keine Sicherung der Schulapp.');
         return;
       }
       const before = JSON.parse(JSON.stringify(book));
       const merged = mergeBooks(book, incoming);
-      book.classes = merged.classes; book.deleted = merged.deleted; book.v = 2;
-      saveBook(); fixSelection(); applyTestMax(); selectStudent(state.studentId, false);
+      book.classes = merged.classes; book.deleted = merged.deleted; book.plans = merged.plans; book.v = 2;
+      saveBook(); fixSelection(); applyTestMax(); selectStudent(state.studentId, false); renderPlan();
       toast.show('Zusammengeführt: ' + stats(book), () => {
-        book.classes = before.classes; book.deleted = before.deleted || {};
+        book.classes = before.classes; book.deleted = before.deleted || {}; book.plans = before.plans || [];
         saveBook(); fixSelection(); applyTestMax(); selectStudent(state.studentId, false);
       });
     };
@@ -2438,15 +2623,782 @@
           });
         });
       }).catch(() => {});
+      // Nur nach einem Update neu laden – nicht bei der allerersten Installation
+      const hadController = !!navigator.serviceWorker.controller;
       let reloaded = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
     });
   }
   // Browser um dauerhaften Speicher bitten, damit Noten nicht automatisch aufgeräumt werden
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
+  // ---------- Stundenplan ----------
+  // Ein Plan: Stundenzeiten (periods) + Einträge je Tag/Stunde (cells, Schlüssel „Tag-Stunde“, beide ab 0)
+  const PLAN_COLORS = {
+    orange: '#ff9500', blue: '#32ade6', green: '#34c759', indigo: '#5856d6',
+    purple: '#af52de', pink: '#ff2d55', red: '#ff3b30', yellow: '#ffcc00', none: ''
+  };
+  const COLOR_NAMES = { orange: 'Orange', blue: 'Blau', green: 'Grün', indigo: 'Indigo', purple: 'Lila', pink: 'Pink', red: 'Rot', yellow: 'Gelb', none: 'Keine Farbe' };
+  const colorOf = (k) => PLAN_COLORS[k] || 'var(--label-3)';
+  const DAY_NAMES = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+  const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+  const fmtDur = (min) => min < 60 ? min + ' Min.' : Math.floor(min / 60) + ' Std.' + (min % 60 ? ' ' + (min % 60) + ' Min.' : '');
+
+  // Vorbelegung: der hochgeladene, aktuelle Stundenplan
+  function seedPlan() {
+    const P = (start, end) => ({ start, end });
+    const cells = {};
+    const put = (d, p, text, color) => { cells[d + '-' + p] = { text, color }; };
+    put(0, 0, 'EN 5b', 'orange'); put(1, 0, 'EN 5b', 'orange');
+    put(0, 1, 'DE 6c', 'blue'); put(1, 1, 'H-DE7b', 'none'); put(2, 1, 'DE 6c', 'blue');
+    put(0, 2, 'DE 6c', 'blue'); put(1, 2, 'H-DE7b', 'none'); put(2, 2, 'DE 6c', 'blue');
+    put(1, 3, 'H-EN7d', 'none'); put(2, 3, 'H-EN8a', 'none');
+    put(1, 4, 'H-EN7d', 'none'); put(2, 4, 'H-EN8a', 'none');
+    put(1, 5, 'Mentorenstunde Englisch', 'orange'); put(2, 5, 'EN 5b', 'orange'); put(3, 5, 'DE 6c', 'blue');
+    put(2, 6, 'EN 5b', 'orange'); put(3, 6, 'EN 5b', 'orange');
+    put(3, 7, 'Mentorenstunde Deutsch', 'blue');
+    return {
+      id: 'plan-start', name: 'Aktueller Stundenplan', at: 1, cells,
+      periods: [P('07:55', '08:40'), P('08:50', '09:35'), P('09:35', '10:20'), P('10:50', '11:35'), P('11:45', '12:30'),
+        P('12:40', '13:25'), P('13:55', '14:40'), P('14:45', '15:30'), P('', ''), P('', '')]
+    };
+  }
+  if (!Array.isArray(book.plans)) { book.plans = [seedPlan()]; saveBook(); }
+  // Ganztägige Termine je Wochentag (ersetzen die Stunden dieses Tages)
+  const dayNote = (p, d) => { const n = p.dayNotes && p.dayNotes[d]; return n && n.text ? n : null; };
+  // Freitag ist Seminartag bis 15:40
+  (function () {
+    const sp = book.plans.find((x) => x.id === 'plan-start');
+    if (sp && !sp.dayNotes) { sp.dayNotes = { 4: { text: 'Seminartag', start: '', end: '15:40', color: 'indigo' } }; sp.at = now(); saveBook(); }
+  })();
+
+  const curPlan = () => book.plans.find((p) => p.id === state.planId) || book.plans.find((p) => !p.draft) || book.plans[0] || null;
+  const todayIdx = () => (new Date().getDay() + 6) % 7;            // Mo = 0
+  if (state.planDay !== 'week') state.planDay = String(todayIdx() < 5 ? todayIdx() : 0);
+  let draftImgUrl = null, draftBusy = false, prevPlanId = null;
+
+  const pl = {
+    view: $('#viewPlan'), btn: $('#planBtn'), btnV: $('#planBtnV'),
+    draft: $('#draftCard'), draftPreview: $('#draftPreview'), draftImg: $('#draftImg'), draftTitle: $('#draftTitle'),
+    draftStatus: $('#draftStatus'), draftProgress: $('#draftProgress'), draftBar: $('#draftBar'), draftActions: $('#draftActions'),
+    now: $('#nowCard'), nowK: $('#nowK'), nowV: $('#nowV'), nowS: $('#nowS'),
+    dayList: $('#dayList'), weekWrap: $('#weekWrap'), week: $('#weekTable'), foot: $('#planFoot'),
+    file: $('#planFileInput')
+  };
+  const daySeg = createSegmented($('#daySeg'), (v) => { state.planDay = v; save(); renderPlan(); });
+
+  // Sichtbare Stunden: bis zur letzten Stunde mit Zeit oder Eintrag
+  function visiblePeriods(p) {
+    let last = -1;
+    p.periods.forEach((x, i) => { if (x.start || x.end) last = i; });
+    Object.keys(p.cells).forEach((k) => { const i = Number(k.split('-')[1]); if (p.cells[k].text) last = Math.max(last, i); });
+    return Array.from({ length: Math.max(last + 1, Math.min(p.periods.length, 6)) }, (_, i) => i);
+  }
+  const longest = (t) => Math.max(4, ...String(t).split(/\s+/).map((w) => w.length));
+  const cellAt = (p, d, i) => { const c = p.cells[d + '-' + i]; return c && c.text ? c : null; };
+
+  // Was läuft gerade, was kommt als Nächstes?
+  function nowInfo(p, date = new Date()) {
+    const d = (date.getDay() + 6) % 7, m = date.getHours() * 60 + date.getMinutes();
+    if (d < 5 && dayNote(p, d)) {
+      const note = dayNote(p, d), s0 = toMin(note.start), e0 = toMin(note.end);
+      if ((s0 === null || m >= s0) && (e0 === null || m < e0)) return { kind: 'now', d, note, cell: note, left: e0 !== null ? e0 - m : null };
+      if (s0 !== null && m < s0) return { kind: 'next', d, note, cell: note, in: s0 - m, cur: -1 };
+    } else if (d < 5) {
+      let cur = -1;
+      p.periods.forEach((x, i) => { const s = toMin(x.start), e = toMin(x.end); if (s !== null && e !== null && m >= s && m < e) cur = i; });
+      if (cur >= 0 && cellAt(p, d, cur)) return { kind: 'now', d, i: cur, cell: cellAt(p, d, cur), left: toMin(p.periods[cur].end) - m };
+      for (let i = 0; i < p.periods.length; i++) {
+        const s = toMin(p.periods[i].start);
+        if (s !== null && s > m && cellAt(p, d, i)) return { kind: 'next', d, i, cell: cellAt(p, d, i), in: s - m, cur };
+      }
+    }
+    for (let k = 1; k <= 7; k++) {
+      const dd = (d + k) % 7;
+      if (dd > 4) continue;
+      if (dayNote(p, dd)) return { kind: 'later', d: dd, note: dayNote(p, dd), cell: dayNote(p, dd), tomorrow: k === 1, weekday: d < 5 };
+      for (let i = 0; i < p.periods.length; i++) {
+        if (cellAt(p, dd, i)) return { kind: 'later', d: dd, i, cell: cellAt(p, dd, i), tomorrow: k === 1, weekday: d < 5 };
+      }
+    }
+    return { kind: 'empty' };
+  }
+
+  function renderPlan() {
+    const p = curPlan();
+    if (!p) return;
+    pl.btnV.textContent = p.name + (p.draft ? ' (Entwurf)' : '');
+
+    // Entwurf aus Foto
+    pl.draft.hidden = !p.draft;
+    if (p.draft) {
+      pl.draftPreview.hidden = !draftImgUrl;
+      if (draftImgUrl && pl.draftImg.src !== draftImgUrl) pl.draftImg.src = draftImgUrl;
+      pl.draftProgress.hidden = !draftBusy;
+      pl.draftActions.hidden = draftBusy;
+    }
+
+    // Jetzt-Karte
+    const info = nowInfo(p);
+    const t = todayIdx();
+    pl.now.classList.toggle('quiet', info.kind === 'empty');
+    pl.now.style.setProperty('--nc', info.cell ? (PLAN_COLORS[info.cell.color] || 'var(--accent)') : 'var(--label-3)');
+    const per = (i) => (i + 1) + '. Stunde';
+    const span = (n) => (n.start && n.end ? n.start + ' – ' + n.end : n.end ? 'bis ' + n.end : n.start ? 'ab ' + n.start : 'ganztägig');
+    if (info.note) {
+      const n = info.note;
+      pl.nowV.textContent = n.text;
+      if (info.kind === 'now') {
+        pl.nowK.textContent = 'Heute';
+        pl.nowS.textContent = n.end ? 'bis ' + n.end + ' · noch ' + fmtDur(info.left) : 'ganztägig';
+      } else if (info.kind === 'next') {
+        pl.nowK.textContent = 'Als Nächstes · ' + n.start;
+        pl.nowS.textContent = span(n) + ' · in ' + fmtDur(info.in);
+      } else {
+        pl.nowK.textContent = info.tomorrow ? 'Morgen' : DAY_NAMES[info.d];
+        pl.nowS.textContent = span(n) + (info.weekday ? ' · heute keine Stunden mehr' : ' · schönes Wochenende');
+      }
+    } else if (info.kind === 'now') {
+      pl.nowK.textContent = 'Jetzt · ' + per(info.i);
+      pl.nowV.textContent = info.cell.text;
+      pl.nowS.textContent = 'bis ' + p.periods[info.i].end + ' · noch ' + fmtDur(info.left);
+    } else if (info.kind === 'next') {
+      pl.nowK.textContent = 'Als Nächstes · ' + p.periods[info.i].start;
+      pl.nowV.textContent = info.cell.text;
+      pl.nowS.textContent = per(info.i) + ' · in ' + fmtDur(info.in) + (info.cur >= 0 ? ' · gerade frei' : '');
+    } else if (info.kind === 'later') {
+      pl.nowK.textContent = (info.tomorrow ? 'Morgen' : DAY_NAMES[info.d]) + (p.periods[info.i].start ? ' · ' + p.periods[info.i].start : '');
+      pl.nowV.textContent = info.cell.text;
+      pl.nowS.textContent = per(info.i) + (info.weekday ? ' · heute keine Stunden mehr' : ' · schönes Wochenende');
+    } else {
+      pl.nowK.textContent = 'Stundenplan';
+      pl.nowV.textContent = 'Noch keine Stunden eingetragen';
+      pl.nowS.textContent = 'Tippe unten auf eine Stunde, um sie einzutragen.';
+    }
+
+    // Tag oder Woche
+    daySeg.set(state.planDay);
+    const week = state.planDay === 'week';
+    pl.dayList.hidden = week;
+    pl.weekWrap.hidden = !week;
+    const rows = visiblePeriods(p);
+    const curNow = info.kind === 'now' ? info : (info.kind === 'next' && info.cur >= 0 ? { d: info.d, i: info.cur } : null);
+
+    if (!week) {
+      const d = Number(state.planDay);
+      pl.dayList.innerHTML = '';
+      const note = dayNote(p, d);
+      if (note) {
+        const b = document.createElement('button');
+        b.className = 'lesson-row allday';
+        const isNow = info.kind === 'now' && info.note && info.d === d && d === t;
+        b.classList.toggle('now', !!isNow);
+        b.innerHTML = '<span class="l-time"><small>ganzer</small><small>Tag</small></span>'
+          + '<span class="l-body"><span class="l-bar"></span><span><span class="l-text"></span><small class="l-sub"></small></span>'
+          + (isNow ? '<span class="l-badge">Jetzt</span>' : '') + '</span>';
+        b.style.setProperty('--lc', colorOf(note.color));
+        b.querySelector('.l-text').textContent = note.text;
+        b.querySelector('.l-sub').textContent = span(note);
+        b.addEventListener('click', () => openDayNoteSheet(d));
+        pl.dayList.appendChild(b);
+      }
+      if (!note) rows.forEach((i) => {
+        const c = cellAt(p, d, i), per0 = p.periods[i] || {};
+        const b = document.createElement('button');
+        b.className = 'lesson-row';
+        const isNow = curNow && curNow.d === d && curNow.i === i && d === t;
+        b.classList.toggle('now', !!isNow);
+        b.innerHTML = '<span class="l-time"><b>' + (i + 1) + '</b><small>' + esc(per0.start || '') + '</small></span>'
+          + '<span class="l-body"><span class="l-bar"></span><span class="l-text"></span>' + (isNow ? '<span class="l-badge">Jetzt</span>' : '') + '</span>';
+        b.style.setProperty('--lc', c ? colorOf(c.color) : 'transparent');
+        const lt = b.querySelector('.l-text');
+        lt.textContent = c ? c.text : 'frei';
+        lt.classList.toggle('free', !c);
+        b.setAttribute('aria-label', DAY_NAMES[d] + ', ' + (i + 1) + '. Stunde' + (per0.start ? ', ' + per0.start + ' bis ' + per0.end : '') + ': ' + (c ? c.text : 'frei'));
+        b.addEventListener('click', () => openLessonSheet(d, i));
+        pl.dayList.appendChild(b);
+      });
+      if (!note) {
+        const add = document.createElement('button');
+        add.className = 'lesson-row add';
+        add.innerHTML = '<span class="l-time"></span><span class="l-body"><span class="l-text">+ Ganztägiger Termin</span><small class="l-sub">z. B. Seminartag, Ausflug</small></span>';
+        add.addEventListener('click', () => openDayNoteSheet(d));
+        pl.dayList.appendChild(add);
+      }
+    } else {
+      let html = '<thead><tr><th></th>' + DAY_NAMES.map((n, d) => '<th class="' + (d === t ? 'today' : '') + '">' + n.slice(0, 2) + '</th>').join('') + '</tr></thead><tbody>';
+      rows.forEach((i) => {
+        const per0 = p.periods[i] || {};
+        html += '<tr><td><b>' + (i + 1) + '</b>' + esc(per0.start || '') + '</td>';
+        for (let d = 0; d < 5; d++) {
+          const note = dayNote(p, d);
+          if (note) {
+            if (i === rows[0]) {
+              const isNowN = info.kind === 'now' && info.note && info.d === d && d === t;
+              html += '<td class="allday" rowspan="' + rows.length + '"><button class="wk-cell filled allday' + (isNowN ? ' now' : '') + '" data-note="' + d + '" style="--lc:' + colorOf(note.color) + '">'
+                + '<span lang="de" style="--len:' + longest(note.text) + '">' + esc(note.text) + '</span><small>' + esc(span(note)) + '</small></button></td>';
+            }
+            continue;
+          }
+          const c = cellAt(p, d, i);
+          const isNow = curNow && curNow.d === d && curNow.i === i && d === t;
+          html += '<td><button class="wk-cell' + (c ? ' filled' : '') + (isNow ? ' now' : '') + '" data-d="' + d + '" data-i="' + i + '"'
+            + (c ? ' style="--lc:' + colorOf(c.color) + '"' : '') + ' aria-label="' + DAY_NAMES[d] + ', ' + (i + 1) + '. Stunde: ' + (c ? esc(c.text) : 'frei') + '">'
+            + (c ? '<span lang="de" style="--len:' + longest(c.text) + '">' + esc(c.text) + '</span>' : '') + '</button></td>';
+        }
+        html += '</tr>';
+      });
+      pl.week.innerHTML = html + '</tbody>';
+    }
+  }
+  pl.week.addEventListener('click', (e) => {
+    const b = e.target.closest('.wk-cell');
+    if (!b) return;
+    if (b.dataset.note !== undefined) openDayNoteSheet(Number(b.dataset.note));
+    else openLessonSheet(Number(b.dataset.d), Number(b.dataset.i));
+  });
+
+  // Klasse im Eintrag erkennen („EN 5b“, „H-DE7b“ → 5b / 7b) und zur Notenansicht springen
+  function classFor(text) {
+    const m = String(text).match(/(\d{1,2})\s?([a-z])\b/i);
+    if (!m) return null;
+    const token = (m[1] + m[2]).toLowerCase();
+    return book.classes.find((c) => c.name.toLowerCase().replace(/\s+/g, '') === token)
+      || book.classes.find((c) => c.name.toLowerCase().replace(/\s+/g, '').includes(token)) || null;
+  }
+
+  function openLessonSheet(d, i) {
+    const p = curPlan(); if (!p) return;
+    const key = d + '-' + i;
+    const cur = p.cells[key] || { text: '', color: 'none' };
+    let color = cur.color || 'none', colorTouched = !!cur.text, input;
+    const per0 = p.periods[i] || {};
+    sheet.open(DAY_NAMES[d] + ', ' + (i + 1) + '. Stunde', (body) => {
+      if (per0.start) { const n = document.createElement('p'); n.className = 'sheet-note'; n.style.margin = '0 1rem -.5rem'; n.textContent = per0.start + ' – ' + per0.end + ' Uhr'; body.appendChild(n); }
+      body.appendChild(card('<input class="sheet-input" id="lsText" placeholder="z. B. EN 5b" autocomplete="off">'));
+      input = body.querySelector('#lsText'); input.value = cur.text;
+
+      // Vorschläge: bereits verwendete Einträge (schnelles Eintragen)
+      const seen = new Map();
+      Object.values(p.cells).forEach((c) => { if (c.text && !seen.has(c.text)) seen.set(c.text, c.color); });
+      if (seen.size) {
+        const st = document.createElement('h4'); st.className = 'section-title'; st.textContent = 'Schon verwendet'; body.appendChild(st);
+        const box = card('<div class="suggest"></div>'); const sg = box.firstChild;
+        seen.forEach((col, txt) => {
+          const b = document.createElement('button'); b.className = 'press'; b.textContent = txt;
+          b.style.setProperty('--lc', colorOf(col));
+          b.addEventListener('click', () => { input.value = txt; color = col; colorTouched = true; paint(); });
+          sg.appendChild(b);
+        });
+        body.appendChild(box);
+      }
+
+      const ct = document.createElement('h4'); ct.className = 'section-title'; ct.textContent = 'Farbe'; body.appendChild(ct);
+      const sw = card('<div class="swatches" role="radiogroup" aria-label="Farbe"></div>');
+      const swBox = sw.firstChild;
+      Object.keys(PLAN_COLORS).forEach((k) => {
+        const b = document.createElement('button');
+        b.className = 'swatch' + (k === 'none' ? ' none' : ''); b.setAttribute('role', 'radio');
+        b.setAttribute('aria-label', COLOR_NAMES[k]); b.dataset.k = k;
+        if (k !== 'none') b.style.setProperty('--sw', PLAN_COLORS[k]);
+        b.addEventListener('click', () => { color = k; colorTouched = true; paint(); });
+        swBox.appendChild(b);
+      });
+      body.appendChild(sw);
+      const paint = () => swBox.querySelectorAll('.swatch').forEach((b) => b.setAttribute('aria-checked', b.dataset.k === color));
+      paint();
+      // Gleicher Text wie anderswo → gleiche Farbe übernehmen
+      input.addEventListener('input', () => {
+        if (!colorTouched && seen.has(input.value.trim())) { color = seen.get(input.value.trim()); paint(); }
+        jump.hidden = !classFor(input.value);
+      });
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#sheetSave').click(); });
+
+      const jump = document.createElement('button');
+      jump.className = 'danger-btn press'; jump.style.color = 'var(--accent)';
+      jump.textContent = 'Noten für diese Klasse eintragen';
+      jump.hidden = !classFor(cur.text);
+      jump.addEventListener('click', () => {
+        const c = classFor(input.value); if (!c) return;
+        sheet.close();
+        state.classId = c.id; state.testId = null; state.studentId = null;
+        fixSelection(); applyTestMax(); setView('grades'); selectStudent(state.studentId, false);
+      });
+      body.appendChild(jump);
+
+      if (cur.text) {
+        const del = document.createElement('button'); del.className = 'danger-btn press'; del.textContent = 'Stunde leeren';
+        del.addEventListener('click', () => {
+          const prev = p.cells[key]; delete p.cells[key]; p.at = now(); saveBook(); sheet.close(); renderPlan();
+          toast.show('Stunde geleert', () => { p.cells[key] = prev; p.at = now(); saveBook(); renderPlan(); });
+        });
+        body.appendChild(del);
+      }
+    }, () => {
+      const text = input.value.trim().slice(0, 60);
+      if (text) p.cells[key] = { text, color }; else delete p.cells[key];
+      p.at = now(); saveBook(); renderPlan();
+    });
+  }
+
+  // Farbwahl als wiederverwendbare Karte
+  function swatchCard(get, set) {
+    const sw = card('<div class="swatches" role="radiogroup" aria-label="Farbe"></div>');
+    const box = sw.firstChild;
+    const paint = () => box.querySelectorAll('.swatch').forEach((b) => b.setAttribute('aria-checked', b.dataset.k === get()));
+    Object.keys(PLAN_COLORS).forEach((k) => {
+      const b = document.createElement('button');
+      b.className = 'swatch' + (k === 'none' ? ' none' : ''); b.setAttribute('role', 'radio');
+      b.setAttribute('aria-label', COLOR_NAMES[k]); b.dataset.k = k;
+      if (k !== 'none') b.style.setProperty('--sw', PLAN_COLORS[k]);
+      b.addEventListener('click', () => { set(k); paint(); });
+      box.appendChild(b);
+    });
+    paint();
+    return sw;
+  }
+
+  // Ganztägiger Termin für einen Wochentag (ersetzt dessen Stunden)
+  function openDayNoteSheet(d) {
+    const p = curPlan(); if (!p) return;
+    const cur = (p.dayNotes && p.dayNotes[d]) || { text: '', start: '', end: '', color: 'indigo' };
+    let color = cur.color || 'indigo', input, sIn, eIn;
+    sheet.open(DAY_NAMES[d] + ' · ganztägig', (body) => {
+      const n = document.createElement('p'); n.className = 'sheet-note'; n.style.margin = '0 1rem -.5rem';
+      n.textContent = 'Ersetzt die Stunden an diesem Tag – z. B. Seminartag, Ausflug oder Konferenz.';
+      body.appendChild(n);
+      body.appendChild(card('<input class="sheet-input" id="dnText" placeholder="z. B. Seminartag" autocomplete="off">'));
+      input = body.querySelector('#dnText'); input.value = cur.text;
+      const tt = document.createElement('h4'); tt.className = 'section-title'; tt.textContent = 'Uhrzeit (optional)'; body.appendChild(tt);
+      const tc = card('<div class="time-row"><span>Von – bis</span><input type="time" id="dnStart" aria-label="Beginn"><span>–</span><input type="time" id="dnEnd" aria-label="Ende"></div>');
+      body.appendChild(tc);
+      sIn = tc.querySelector('#dnStart'); eIn = tc.querySelector('#dnEnd');
+      sIn.value = cur.start || ''; eIn.value = cur.end || '';
+      const ct = document.createElement('h4'); ct.className = 'section-title'; ct.textContent = 'Farbe'; body.appendChild(ct);
+      body.appendChild(swatchCard(() => color, (k) => { color = k; }));
+      if (cur.text) {
+        const del = document.createElement('button'); del.className = 'danger-btn press'; del.textContent = 'Termin entfernen';
+        del.addEventListener('click', () => {
+          const prev = p.dayNotes[d]; delete p.dayNotes[d]; p.at = now(); saveBook(); sheet.close(); renderPlan();
+          toast.show('Termin entfernt', () => { p.dayNotes[d] = prev; p.at = now(); saveBook(); renderPlan(); });
+        });
+        body.appendChild(del);
+      }
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#sheetSave').click(); });
+    }, () => {
+      const text = input.value.trim().slice(0, 60);
+      p.dayNotes = p.dayNotes || {};
+      if (text) p.dayNotes[d] = { text, start: sIn.value, end: eIn.value, color }; else delete p.dayNotes[d];
+      p.at = now(); saveBook(); renderPlan();
+    });
+  }
+
+  // Plan bearbeiten: Name + Stundenzeiten
+  // Neuer Stundenplan: nur Name + leer oder als Kopie – die Zeiten werden vom aktuellen Plan übernommen
+  function openNewPlanSheet(base) {
+    let nameIn, mode = 'empty';
+    sheet.open('Neuer Stundenplan', (body) => {
+      body.appendChild(card('<input class="sheet-input" id="npName" placeholder="z. B. 2. Halbjahr" autocomplete="off">'));
+      nameIn = body.querySelector('#npName');
+      nameIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#sheetSave').click(); });
+      if (base) {
+        const c = card('<div class="row"><span class="row-label">Beginnen mit</span>'
+          + '<div class="segmented small" role="radiogroup" aria-label="Beginnen mit"><div class="seg-indicator"></div>'
+          + '<button role="radio" data-v="empty">Leer</button><button role="radio" data-v="copy">Kopie</button></div></div>');
+        body.appendChild(c);
+        const note = document.createElement('p'); note.className = 'sheet-note';
+        const explain = () => { note.textContent = mode === 'copy'
+          ? 'Übernimmt alle Stunden und Zeiten von „' + base.name + '“ – praktisch, wenn sich nur wenig ändert.'
+          : 'Die Stundenzeiten werden von „' + base.name + '“ übernommen, die Stunden bleiben leer.'; };
+        const seg = createSegmented(c.querySelector('.segmented'), (v) => { mode = v; seg.set(v); explain(); });
+        body.appendChild(note);
+        requestAnimationFrame(() => seg.set(mode, false));
+        explain();
+      }
+    }, () => {
+      const name = nameIn.value.trim();
+      if (!name) { nameIn.focus(); nameIn.placeholder = 'Bitte einen Namen eingeben'; return false; }
+      const copy = base && mode === 'copy';
+      const np = {
+        id: uid(), name, at: now(),
+        cells: copy ? JSON.parse(JSON.stringify(base.cells)) : {},
+        dayNotes: copy ? JSON.parse(JSON.stringify(base.dayNotes || {})) : {},
+        periods: (base ? base.periods : []).map((x) => ({ ...x }))
+      };
+      book.plans.push(np); state.planId = np.id; save(); saveBook(); renderPlan();
+      toast.show('„' + name + '“ angelegt' + (copy ? '' : ' – zum Eintragen auf eine Stunde tippen'));
+    }, 'Anlegen');
+  }
+
+  // Bestehenden Plan bearbeiten: Stundenzeiten, Name, Löschen
+  function openPlanSheet(p) {
+    let nameIn, periods = p.periods.map((x) => ({ ...x }));
+    sheet.open('Zeiten bearbeiten', (body) => {
+      const box = card(''); body.appendChild(box);
+      const draw = () => {
+        box.innerHTML = '';
+        periods.forEach((x, i) => {
+          const r = document.createElement('div'); r.className = 'time-row';
+          r.innerHTML = '<span>' + (i + 1) + '. Stunde</span><input type="time" aria-label="Beginn"><span>–</span><input type="time" aria-label="Ende">';
+          const [a, b] = r.querySelectorAll('input');
+          a.value = x.start; b.value = x.end;
+          a.addEventListener('input', () => { x.start = a.value; });
+          b.addEventListener('input', () => { x.end = b.value; });
+          box.appendChild(r);
+        });
+        const act = document.createElement('div'); act.className = 'row'; act.style.justifyContent = 'space-between';
+        act.innerHTML = '<button class="link-btn">+ Stunde hinzufügen</button><button class="link-btn danger">Letzte entfernen</button>';
+        const [add, rem] = act.querySelectorAll('button');
+        add.addEventListener('click', () => { periods.push({ start: '', end: '' }); draw(); });
+        rem.disabled = periods.length <= 1;
+        rem.addEventListener('click', () => { periods.pop(); draw(); });
+        box.appendChild(act);
+      };
+      draw();
+      const nt = document.createElement('h4'); nt.className = 'section-title'; nt.textContent = 'Name'; body.appendChild(nt);
+      body.appendChild(card('<input class="sheet-input" id="psName" placeholder="z. B. 2. Halbjahr" autocomplete="off">'));
+      nameIn = body.querySelector('#psName'); nameIn.value = p.name;
+      if (book.plans.filter((x) => !x.draft).length > 1) {
+        const del = document.createElement('button'); del.className = 'danger-btn press'; del.textContent = 'Stundenplan löschen';
+        del.addEventListener('click', () => {
+          const i = book.plans.indexOf(p);
+          book.plans.splice(i, 1); tomb(p.id); saveBook(); sheet.close();
+          state.planId = null; save(); renderPlan();
+          toast.show('„' + p.name + '“ gelöscht', () => { book.plans.splice(i, 0, p); untomb(p.id); p.at = now(); state.planId = p.id; saveBook(); save(); renderPlan(); });
+        });
+        body.appendChild(del);
+      }
+    }, () => {
+      const name = nameIn.value.trim();
+      if (!name) { nameIn.focus(); return false; }
+      p.name = name; p.periods = periods; p.at = now();
+      saveBook(); renderPlan();
+    });
+  }
+
+  menu.bind(pl.btn, () => {
+    const p = curPlan();
+    const list = book.plans.map((x) => ({
+      label: x.name + (x.draft ? ' (Entwurf)' : ''), checked: x.id === (p && p.id),
+      onSelect: () => { state.planId = x.id; save(); renderPlan(); }
+    }));
+    list.push({ sep: true },
+      { label: 'Neuer Stundenplan', icon: ICON_PLUS, keepFocus: true, onSelect: () => openNewPlanSheet(p) },
+      { label: 'Aus Foto oder Datei laden', icon: ICON_DOWN, keepFocus: true, onSelect: () => pl.file.click() });
+    if (p) list.push({ label: 'Zeiten bearbeiten', icon: ICON_EDIT, keepFocus: true, onSelect: () => openPlanSheet(p) });
+    return list;
+  });
+
+  // ---------- Stundenplan aus Foto / Datei ----------
+  function loadCanvas(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = clamp(2400 / Math.max(img.width, img.height), 1, 3);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+        const ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c);
+      };
+      img.onerror = () => reject(new Error('image'));
+      img.src = url;
+    });
+  }
+
+  // Textfarbe einer Zelle bestimmen (farbige Schrift → passende Plan-Farbe, sonst „keine“)
+  function sampleColor(ctx, x0, y0, x1, y1) {
+    const w = Math.max(1, Math.round(x1 - x0)), h = Math.max(1, Math.round(y1 - y0));
+    const data = ctx.getImageData(Math.round(x0), Math.round(y0), w, h).data;
+    let r = 0, g = 0, b = 0, nc = 0, nd = 0;
+    for (let k = 0; k < data.length; k += 8) {
+      const R = data[k], G = data[k + 1], B = data[k + 2];
+      const mx = Math.max(R, G, B), mn = Math.min(R, G, B);
+      const sat = mx ? (mx - mn) / mx : 0, v = mx / 255;
+      if (sat > 0.35 && v > 0.35) { r += R; g += G; b += B; nc++; }
+      else if (v < 0.45) nd++;
+    }
+    if (nc < Math.max(6, nd * 0.6)) return 'none';
+    r /= nc; g /= nc; b /= nc;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dlt = mx - mn;
+    let hue = mx === r ? ((g - b) / dlt) % 6 : mx === g ? (b - r) / dlt + 2 : (r - g) / dlt + 4;
+    hue = (hue * 60 + 360) % 360;
+    if (hue < 12 || hue >= 345) return 'red';
+    if (hue < 42) return 'orange';
+    if (hue < 65) return 'yellow';
+    if (hue < 170) return 'green';
+    if (hue < 222) return 'blue';
+    if (hue < 262) return 'indigo';
+    if (hue < 320) return 'purple';
+    return 'pink';
+  }
+
+  // Bild für die Texterkennung vorbereiten: jede Schrift (auch farbige) wird schwarz, Hintergründe weiß,
+  // lange Tabellenlinien werden entfernt – sie stören die Erkennung am meisten.
+  function binarizeForOcr(src) {
+    const W = src.width, H = src.height;
+    const id = src.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H);
+    const d = id.data, ink = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      const v = mx / 255, s = mx ? (mx - mn) / mx : 0;
+      ink[i] = v < 0.55 || (s > 0.3 && v > 0.25) ? 1 : 0;
+    }
+    for (let y = 0; y < H; y++) { let n = 0; for (let x = 0; x < W; x++) n += ink[y * W + x]; if (n > W * 0.4) ink.fill(0, y * W, y * W + W); }
+    for (let x = 0; x < W; x++) { let n = 0; for (let y = 0; y < H; y++) n += ink[y * W + x]; if (n > H * 0.4) for (let y = 0; y < H; y++) ink[y * W + x] = 0; }
+    for (let i = 0; i < W * H; i++) { const v = ink[i] ? 0 : 255; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
+    const out = document.createElement('canvas'); out.width = W; out.height = H;
+    out.getContext('2d').putImageData(id, 0, 0);
+    return out;
+  }
+
+  // Ähnlichkeit zweier Wörter (Editierdistanz) – für unsauber erkannte Wochentage
+  function editDistance(a, b) {
+    const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return dp[a.length][b.length];
+  }
+  const DAY_KEYS = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag'];
+  function matchDay(t) {
+    const w = t.toLowerCase().replace(/[^a-zäöü]/g, '');
+    if (w.length < 2) return -1;
+    if (w.length <= 3) return DAY_KEYS.findIndex((k) => k.startsWith(w) && w.length >= 2 && ['mo', 'di', 'mi', 'do', 'fr'].includes(w.slice(0, 2)));
+    let best = -1, bestD = Infinity;
+    DAY_KEYS.forEach((k, i) => { const dd = editDistance(w, k); if (dd < bestD) { bestD = dd; best = i; } });
+    return bestD <= Math.max(2, Math.round(DAY_KEYS[best].length * 0.35)) ? best : -1;
+  }
+
+  // Tabelle aus den erkannten Wörtern rekonstruieren: Spalten über die Wochentage, Zeilen über Stundennummern bzw. Uhrzeiten
+  function parseTimetableWords(words, canvas) {
+    const W = words.map((w) => ({ t: (w.text || '').trim(), x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 }))
+      .filter((w) => w.t).map((w) => ({ ...w, cx: (w.x0 + w.x1) / 2, cy: (w.y0 + w.y1) / 2 }));
+
+    // Wochentage (auch aus zwei Wortteilen zusammengesetzt)
+    const heads = [null, null, null, null, null];
+    const cand = W.slice().sort((a, b) => a.cy - b.cy || a.x0 - b.x0);
+    cand.forEach((w, k) => {
+      let d = matchDay(w.t), box = w;
+      const nx = cand[k + 1];
+      if (d < 0 && nx && Math.abs(nx.cy - w.cy) < (w.y1 - w.y0) && nx.x0 - w.x1 < (w.y1 - w.y0) * 1.5) {
+        d = matchDay(w.t + nx.t);
+        if (d >= 0) box = { x0: w.x0, x1: nx.x1, y0: Math.min(w.y0, nx.y0), y1: Math.max(w.y1, nx.y1), cx: (w.x0 + nx.x1) / 2, cy: (w.cy + nx.cy) / 2 };
+      }
+      if (d >= 0 && !heads[d]) heads[d] = box;
+    });
+    // Nur Treffer in derselben Zeile wie die Mehrheit gelten lassen
+    const hy = heads.filter(Boolean).map((h) => h.cy).sort((a, b) => a - b);
+    if (hy.length < 2) throw new Error('days');
+    const medY = hy[Math.floor(hy.length / 2)], tol = (heads.find(Boolean).y1 - heads.find(Boolean).y0) * 1.5;
+    heads.forEach((h, d) => { if (h && Math.abs(h.cy - medY) > tol) heads[d] = null; });
+    const found = heads.map((h, d) => (h ? d : -1)).filter((d) => d >= 0);
+    if (found.length < 2) throw new Error('days');
+    const f0 = found[0], f1 = found[found.length - 1];
+    const slope = (heads[f1].cx - heads[f0].cx) / (f1 - f0);
+    const cx = [0, 1, 2, 3, 4].map((d) => (heads[d] ? heads[d].cx : heads[f0].cx + (d - f0) * slope));
+    const colW = Math.abs(slope);
+    const headerY = Math.max(...found.map((d) => heads[d].y1));
+    const leftEdge = cx[0] - Math.min(colW, cx[1] - cx[0]) / 2;
+
+    // Linke Spalten: Stundennummern und Uhrzeiten
+    const leftWords = W.filter((w) => w.cy > headerY && w.x1 < leftEdge + colW * 0.1).sort((a, b) => a.cy - b.cy);
+    const lineH = Math.max(10, leftWords.reduce((s, w) => s + (w.y1 - w.y0), 0) / Math.max(1, leftWords.length));
+    const timeTok = [];
+    leftWords.forEach((w) => [...w.t.matchAll(/(\d{1,2})[:.](\d{2})(\s*-)?/g)].forEach((m) =>
+      timeTok.push({ t: m[1].padStart(2, '0') + ':' + m[2], dash: !!m[3], cy: w.cy })));
+    const numToks = leftWords.filter((w) => /^\d{1,2}$/.test(w.t) && +w.t >= 1 && +w.t <= 12);
+
+    let rows = [];
+    // a) Über Uhrzeiten: Beginn (mit „-“) + Ende darunter
+    const starts = timeTok.filter((x) => x.dash);
+    const useStarts = starts.length >= 2 ? starts : timeTok.filter((_, k) => k % 2 === 0);
+    useStarts.forEach((s) => {
+      const end = timeTok.find((x) => x.cy > s.cy && x.cy - s.cy < lineH * 2.2 && x !== s && !x.dash);
+      rows.push({ cy: end ? (s.cy + end.cy) / 2 : s.cy + lineH * 0.6, start: s.t, end: end ? end.t : '' });
+    });
+    // b) Ohne Uhrzeiten: über die Stundennummern
+    if (rows.length < 2) rows = numToks.map((w) => ({ cy: w.cy, start: '', end: '' }));
+    if (rows.length < 2) throw new Error('rows');
+    rows.sort((a, b) => a.cy - b.cy);
+    rows.forEach((r, k) => {
+      r.top = k === 0 ? headerY : (rows[k - 1].cy + r.cy) / 2;
+      r.bottom = k === rows.length - 1 ? r.cy + (r.cy - r.top) : (r.cy + rows[k + 1].cy) / 2;
+    });
+    // Stundennummer: erkannte Zahl in der Zeile, sonst fortlaufend
+    let firstN = 1;
+    const anchor = rows.findIndex((r) => numToks.some((w) => w.cy >= r.top && w.cy < r.bottom));
+    if (anchor >= 0) firstN = Number(numToks.find((w) => w.cy >= rows[anchor].top && w.cy < rows[anchor].bottom).t) - anchor;
+    rows.forEach((r, k) => { r.n = Math.max(1, firstN + k); });
+    const rowAt = (y) => rows.find((r) => y >= r.top && y < r.bottom);
+
+    const maxN = Math.max(...rows.map((r) => r.n));
+    const periods = Array.from({ length: maxN }, () => ({ start: '', end: '' }));
+    rows.forEach((r) => { periods[r.n - 1] = { start: r.start, end: r.end }; });
+
+    // Zellen: Wort → nächstgelegene Tagesspalte + Zeile
+    const groups = {};
+    W.filter((w) => w.cy > headerY && w.cx >= leftEdge).forEach((w) => {
+      if (/^[|_\-–—.,:;'"“”]+$/.test(w.t)) return;
+      const r = rowAt(w.cy); if (!r) return;
+      let d = 0; cx.forEach((x, k) => { if (Math.abs(w.cx - x) < Math.abs(w.cx - cx[d])) d = k; });
+      (groups[d + '-' + (r.n - 1)] = groups[d + '-' + (r.n - 1)] || []).push(w);
+    });
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const cells = {};
+    Object.entries(groups).forEach(([key, ws]) => {
+      const lh = Math.max(8, ws.reduce((s, w) => s + (w.y1 - w.y0), 0) / ws.length * 0.7);
+      ws.sort((a, b) => Math.round(a.cy / lh) - Math.round(b.cy / lh) || a.x0 - b.x0);
+      const text = ws.map((w) => w.t).join(' ').replace(/[|_]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!text || text.length < 2) return;
+      const color = sampleColor(ctx, Math.min(...ws.map((w) => w.x0)), Math.min(...ws.map((w) => w.y0)), Math.max(...ws.map((w) => w.x1)), Math.max(...ws.map((w) => w.y1)));
+      cells[key] = { text, color };
+    });
+    // Schreibweisen vereinheitlichen („En 5b“ + „EN 5b“ → häufigere Variante)
+    const variants = {};
+    Object.values(cells).forEach((c) => { const k = c.text.toLowerCase(); variants[k] = variants[k] || {}; variants[k][c.text] = (variants[k][c.text] || 0) + 1; });
+    Object.values(cells).forEach((c) => {
+      const v = variants[c.text.toLowerCase()];
+      c.text = Object.keys(v).sort((a, b) => v[b] - v[a] || (b === b.toUpperCase()) - (a === a.toUpperCase()))[0];
+    });
+    return { periods, cells };
+  }
+
+  // CSV/TXT: Kopfzeile mit Wochentagen, darunter je Stunde eine Zeile
+  function parsePlanText(text) {
+    const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
+    const split = (l) => l.split(l.includes(';') ? ';' : l.includes('\t') ? '\t' : ',').map((c) => c.trim().replace(/^"(.*)"$/, '$1').trim());
+    const dayRe = [/^mo/i, /^di/i, /^mi/i, /^do/i, /^fr/i];
+    let hi = -1, dayCol = {}, timeCol = -1;
+    for (let k = 0; k < lines.length && hi < 0; k++) {
+      const cs = split(lines[k]);
+      cs.forEach((c, j) => { const d = dayRe.findIndex((re) => re.test(c)); if (d >= 0) dayCol[j] = d; if (/zeit|uhr/i.test(c)) timeCol = j; });
+      if (Object.keys(dayCol).length >= 2) hi = k; else dayCol = {};
+    }
+    if (hi < 0) throw new Error('days');
+    const periods = [], cells = {};
+    lines.slice(hi + 1).forEach((l, k) => {
+      const cs = split(l);
+      const n = parseInt(cs[0], 10) || k + 1;
+      while (periods.length < n) periods.push({ start: '', end: '' });
+      if (timeCol >= 0) {
+        const t = [...(cs[timeCol] || '').matchAll(/(\d{1,2})[:.](\d{2})/g)].map((m) => m[1].padStart(2, '0') + ':' + m[2]);
+        periods[n - 1] = { start: t[0] || '', end: t[1] || '' };
+      }
+      Object.entries(dayCol).forEach(([j, d]) => { if (cs[j]) cells[d + '-' + (n - 1)] = { text: cs[j].slice(0, 60), color: 'none' }; });
+    });
+    return { periods, cells };
+  }
+
+  function startDraft(name) {
+    const base = curPlan();
+    prevPlanId = base ? base.id : null;
+    const p = { id: uid(), name, at: now(), draft: true, cells: {}, periods: (base ? base.periods : []).map((x) => ({ ...x })) };
+    book.plans.push(p); state.planId = p.id; state.planDay = 'week'; save();
+    return p;
+  }
+
+  async function importPlanFile(file) {
+    if (!file) return;
+    const isImage = /^image\//.test(file.type) || /\.(png|jpe?g|webp|gif|bmp|heic)$/i.test(file.name);
+    if (!isImage) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = parsePlanText(String(reader.result));
+          const p = startDraft(file.name.replace(/\.[^.]+$/, ''));
+          Object.assign(p, parsed);
+          pl.draftTitle.textContent = 'Aus Datei geladen';
+          pl.draftStatus.textContent = 'Bitte prüfen. Zum Korrigieren auf eine Stunde tippen.';
+          if (draftImgUrl) { URL.revokeObjectURL(draftImgUrl); draftImgUrl = null; }
+          saveBook(); renderPlan();
+        } catch (e) { toast.show('In der Datei wurden keine Wochentage gefunden.'); }
+      };
+      reader.readAsText(file);
+      return;
+    }
+    if (draftImgUrl) URL.revokeObjectURL(draftImgUrl);
+    draftImgUrl = URL.createObjectURL(file);
+    const p = startDraft('Stundenplan aus Foto');
+    draftBusy = true;
+    pl.draftTitle.textContent = 'Foto wird gelesen …';
+    pl.draftStatus.textContent = 'Texterkennung wird geladen';
+    pl.draftBar.style.transform = 'scaleX(0)';
+    renderPlan();
+    try {
+      const [canvas] = await Promise.all([loadCanvas(draftImgUrl), loadTesseract()]);
+      pl.draftStatus.textContent = 'Sprachdaten werden geladen (nur beim ersten Mal)';
+      const worker = await Tesseract.createWorker('deu', 1, {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            pl.draftStatus.textContent = 'Text wird erkannt … ' + Math.round(m.progress * 100) + ' %';
+            pl.draftBar.style.transform = `scaleX(${m.progress})`;
+          }
+        }
+      });
+      await worker.setParameters({ tessedit_pageseg_mode: '11' });   // verstreuter Text – passt zu Tabellen
+      const { data } = await worker.recognize(binarizeForOcr(canvas));
+      await worker.terminate();
+      const parsed = parseTimetableWords(data.words || [], canvas);
+      p.cells = parsed.cells;
+      if (parsed.periods.some((x) => x.start)) p.periods = parsed.periods.map((x, i) => (x.start ? x : (p.periods[i] || x)));
+      const n = Object.keys(p.cells).length;
+      pl.draftTitle.textContent = n + ' Stunden erkannt';
+      pl.draftStatus.textContent = 'Bitte mit dem Foto vergleichen. Zum Korrigieren auf eine Stunde tippen.';
+    } catch (err) {
+      pl.draftTitle.textContent = err.message === 'days' || err.message === 'rows' ? 'Tabelle nicht erkannt' : 'Texterkennung nicht verfügbar';
+      pl.draftStatus.textContent = err.message === 'days' || err.message === 'rows'
+        ? 'Wochentage oder Stundennummern waren nicht lesbar. Du kannst die Stunden antippen und selbst eintragen.'
+        : 'Beim ersten Mal wird Internet benötigt. Du kannst die Stunden auch selbst eintragen.';
+    }
+    draftBusy = false;
+    p.at = now(); saveBook(); renderPlan();
+  }
+  pl.file.addEventListener('change', () => { importPlanFile(pl.file.files[0]); pl.file.value = ''; });
+  pl.draftPreview.addEventListener('click', () => pl.draftPreview.classList.toggle('big'));
+  $('#draftKeep').addEventListener('click', () => {
+    const p = curPlan(); if (!p) return;
+    delete p.draft; p.at = now(); saveBook();
+    if (draftImgUrl) { URL.revokeObjectURL(draftImgUrl); draftImgUrl = null; }
+    renderPlan();
+    openPlanSheet(p);   // Zeiten prüfen und passenden Namen vergeben
+  });
+  $('#draftDiscard').addEventListener('click', () => {
+    const p = curPlan(); if (!p || !p.draft) return;
+    book.plans.splice(book.plans.indexOf(p), 1); saveBook();
+    state.planId = prevPlanId; save();
+    if (draftImgUrl) { URL.revokeObjectURL(draftImgUrl); draftImgUrl = null; }
+    renderPlan();
+  });
+
+  // ---------- Bereiche (Tab-Leiste) ----------
+  const views = { grades: $('#viewGrades'), plan: $('#viewPlan') };
+  function setView(v) {
+    if (!views[v]) v = 'grades';
+    const changed = state.view !== v;
+    state.view = v; save();
+    Object.entries(views).forEach(([k, node]) => {
+      node.hidden = k !== v;
+      if (k === v && changed) { node.classList.remove('fade-in'); void node.offsetWidth; node.classList.add('fade-in'); }
+    });
+    document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.view === v));
+    const title = v === 'plan' ? 'Stundenplan' : 'Notenrechner';
+    $('#bigTitle').textContent = title; navTitle.textContent = title;
+    $('#bigSub').textContent = v === 'plan'
+      ? new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })
+      : 'Punkte eingeben, Note sehen.';
+    if (v === 'plan') renderPlan(); else render();
+    if (changed) window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => setView(t.dataset.view)));
+  // „Jetzt“ aktuell halten
+  setInterval(() => { if (state.view === 'plan' && !document.hidden) renderPlan(); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && state.view === 'plan') renderPlan(); });
+
   // ---------- Start ----------
   render(false);
+  setView('plan');   // Startseite: Stundenplan
   // Ohne Gesamtpunktzahl geht nichts – dann direkt dort starten
   if (!parseNum(state.max)) el.max.focus({ preventScroll: true });
   // Nach dem Laden der Schrift Maße neu bestimmen
