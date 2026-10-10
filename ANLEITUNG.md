@@ -85,8 +85,8 @@ sind die Daten auf diesem Gerät weg.
 Im Stundenplan-Menü unter **Weckzeiten** für jeden Wochentag eine Uhrzeit einstellen.
 Am Vorabend erscheint oben neben der ersten Stunde ein **Wecker-Knopf**. Er startet den
 Kurzbefehl **„Schulwecker“**, der prüft, ob der Wecker in der Uhr-App aktiv ist, ihn
-einschaltet oder neu stellt. Die Schritte zum einmaligen Einrichten des Kurzbefehls stehen
-direkt im Fenster *Weckzeiten*.
+einschaltet oder neu stellt. Die Schritte zum einmaligen Einrichten des Kurzbefehls öffnet der
+**?**-Knopf im Fenster *Weckzeiten*.
 
 ---
 
@@ -94,7 +94,7 @@ direkt im Fenster *Weckzeiten*.
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v7';` hochzählen (`'v8'`, `'v9'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v8';` hochzählen (`'v9'`, `'v10'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.

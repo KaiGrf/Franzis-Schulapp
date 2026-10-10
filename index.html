@@ -327,7 +327,7 @@
   .scrim.on { pointer-events: auto; }
   .sheet {
     position: fixed; left: 50%; bottom: 0; z-index: 51;
-    width: min(36rem, 100%); max-height: 92vh; display: flex; flex-direction: column;
+    width: min(36rem, 100%); max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column;
     background: var(--bg); border-radius: 1.25rem 1.25rem 0 0;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, .2);
     transform: translate3d(-50%, 100%, 0); will-change: transform;
@@ -341,7 +341,11 @@
   .sheet-head .link-btn { font-size: 1.0625rem; justify-self: start; }
   .sheet-head .link-btn.strong { font-weight: 600; justify-self: end; }
   .link-btn:disabled { opacity: .35; pointer-events: none; }
-  .sheet-body { overflow: auto; padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom)); display: grid; gap: 1rem; overscroll-behavior: contain; }
+  .sheet-body {
+    flex: 1 1 auto; min-height: 0;   /* ohne min-height: 0 wächst der Inhalt über den Bildschirm statt zu scrollen */
+    overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+    padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom)); display: grid; align-content: start; gap: 1rem; overscroll-behavior: contain;
+  }
   .sheet-body .section-title { margin: .25rem 0 -.5rem 1rem; }
   .sheet-input {
     width: 100%; border: 0; outline: 0; background: transparent; padding: .875rem 1rem; font-size: 1.0625rem;
@@ -410,6 +414,15 @@
     font-size: 1rem; font-variant-numeric: tabular-nums; min-width: 6rem; text-align: center;
   }
   .row.alarm-off .alarm-time { opacity: .45; }
+  .sc-row { display: flex; align-items: center; padding-right: .75rem; }
+  .sc-row .sheet-input { flex: 1; min-width: 0; }
+  .help-btn {
+    width: 1.875rem; height: 1.875rem; flex: none; border: 0; border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+    font-size: 1.0625rem; font-weight: 700; display: grid; place-items: center; transition: background-color .15s, transform .1s ease-out;
+  }
+  .help-btn[aria-expanded="true"] { background: var(--accent); color: #fff; }
+  .steps-title { margin: 0; padding: .875rem 1rem 0; font-weight: 600; font-size: .9375rem; }
   .steps { margin: 0; padding: .875rem 1rem .5rem 2.25rem; font-size: .9375rem; line-height: 1.45; }
   .steps li + li { margin-top: .375rem; }
   .steps ul { margin: .25rem 0 0; padding-left: 1.125rem; }
@@ -2787,12 +2800,22 @@
         box.appendChild(r);
       });
 
-      const kt = document.createElement('h4'); kt.className = 'section-title'; kt.textContent = 'Name des Kurzbefehls'; body.appendChild(kt);
-      body.appendChild(card('<input class="sheet-input" id="alName" autocomplete="off" placeholder="Schulwecker">'));
+      const kt = document.createElement('h4'); kt.className = 'section-title'; kt.textContent = 'Kurzbefehl'; body.appendChild(kt);
+      const kc = card('<div class="sc-row"><input class="sheet-input" id="alName" autocomplete="off" placeholder="Schulwecker" aria-label="Name des Kurzbefehls">'
+        + '<button class="help-btn press" id="alHelp" aria-expanded="false" aria-controls="alSteps" aria-label="Anleitung zum Einrichten des Kurzbefehls">?</button></div>');
+      body.appendChild(kc);
       nameIn = body.querySelector('#alName'); nameIn.value = alarm.name;
 
-      const st = document.createElement('h4'); st.className = 'section-title'; st.textContent = 'Einmalig einrichten (iPhone)'; body.appendChild(st);
-      body.appendChild(card(`<ol class="steps">
+      // Anleitung erst auf Wunsch (aufklappbar, gleicher Weg rein wie raus)
+      const wrap = document.createElement('div'); wrap.className = 'collapse'; wrap.id = 'alSteps';
+      const inner = document.createElement('div'); wrap.appendChild(inner); body.appendChild(wrap);
+      const help = kc.querySelector('#alHelp');
+      help.addEventListener('click', () => {
+        const open = !wrap.classList.contains('open');
+        wrap.classList.toggle('open', open); help.setAttribute('aria-expanded', open);
+        if (open) setTimeout(() => wrap.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'nearest' }), 120);
+      });
+      inner.appendChild(card(`<p class="steps-title">Einmalig auf dem iPhone einrichten</p><ol class="steps">
         <li>App <b>Kurzbefehle</b> öffnen → <b>+</b> → oben den Namen <b class="sc-name"></b> eingeben.</li>
         <li>Aktion <b>„Alle Wecker abrufen“</b> hinzufügen.</li>
         <li>Aktion <b>„Wiederholen mit jedem Objekt“</b> hinzufügen (für die Wecker). Darin:
@@ -2810,6 +2833,7 @@
         <li>Zum Schluss <b>„Mitteilung anzeigen“</b>: „Wecker <i>Kurzbefehleingabe</i> ist aktiv ✓“.</li>
       </ol>
       <p class="steps-note">Je nach iOS-Version heißen die Aktionen leicht anders. Beim ersten Start fragt iOS einmal nach der Erlaubnis für die Uhr-App.</p>`));
+      inner.firstChild.style.marginTop = '0';
       const nm = body.querySelector('.sc-name');
       const syncName = () => { nm.textContent = '„' + (nameIn.value.trim() || 'Schulwecker') + '“'; };
       nameIn.addEventListener('input', syncName); syncName();
