@@ -1,0 +1,3 @@
+# Lokale Werkzeug-Einstellungen, nicht Teil der App
+.claude/
+_test/

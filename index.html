@@ -392,6 +392,29 @@
   .now-v { font-family: var(--font-display); font-size: 2rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin-top: .25rem; }
   .now-s { color: var(--label-2); font-size: .9375rem; margin-top: .25rem; font-variant-numeric: tabular-nums; }
   .now-card.quiet .now-v { font-size: 1.375rem; }
+  .now-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .75rem; }
+  .alarm-btn {
+    border: 0; border-radius: 1rem; padding: .625rem .875rem; min-width: 5.25rem;
+    display: flex; flex-direction: column; align-items: center; gap: .125rem;
+    background: color-mix(in srgb, var(--nc) 16%, var(--card)); color: var(--label);
+    box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--nc) 40%, transparent);
+    transition: transform .1s ease-out, background-color .15s;
+  }
+  .alarm-btn:active { transform: scale(.94); }
+  .alarm-btn svg { width: 1.375rem; height: 1.375rem; color: var(--nc); }
+  .alarm-k { font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--label-2); }
+  .alarm-v { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .alarm-btn.setup .alarm-v { font-size: .875rem; font-weight: 600; color: var(--accent); }
+  .alarm-time {
+    border: 0; outline: 0; border-radius: .5rem; background: var(--fill); padding: .375rem .5rem;
+    font-size: 1rem; font-variant-numeric: tabular-nums; min-width: 6rem; text-align: center;
+  }
+  .row.alarm-off .alarm-time { opacity: .45; }
+  .steps { margin: 0; padding: .875rem 1rem .5rem 2.25rem; font-size: .9375rem; line-height: 1.45; }
+  .steps li + li { margin-top: .375rem; }
+  .steps ul { margin: .25rem 0 0; padding-left: 1.125rem; }
+  .steps code { font-size: .875rem; background: var(--fill); padding: 0 .3125rem; border-radius: .25rem; }
+  .steps-note { margin: 0; padding: 0 1rem .875rem; font-size: .8125rem; color: var(--label-2); }
 
   .lesson-row {
     width: 100%; display: flex; align-items: stretch; gap: .875rem; border: 0; background: none; text-align: left;
@@ -1018,9 +1041,16 @@
 
   <!-- Jetzt / Als Nächstes -->
   <section class="now-card" id="nowCard" aria-live="polite">
+    <div class="now-main">
     <div class="now-k" id="nowK">Jetzt</div>
     <div class="now-v" id="nowV">–</div>
     <div class="now-s" id="nowS"></div>
+    </div>
+    <button class="alarm-btn" id="alarmBtn" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M5 3.5 2.5 6M19 3.5 21.5 6"/></svg>
+      <span class="alarm-k" id="alarmK">Wecker</span>
+      <span class="alarm-v" id="alarmV">–</span>
+    </button>
   </section>
 
   <section>
@@ -2702,6 +2732,7 @@
     draft: $('#draftCard'), draftPreview: $('#draftPreview'), draftImg: $('#draftImg'), draftTitle: $('#draftTitle'),
     draftStatus: $('#draftStatus'), draftProgress: $('#draftProgress'), draftBar: $('#draftBar'), draftActions: $('#draftActions'),
     now: $('#nowCard'), nowK: $('#nowK'), nowV: $('#nowV'), nowS: $('#nowS'),
+    alarmBtn: $('#alarmBtn'), alarmK: $('#alarmK'), alarmV: $('#alarmV'),
     dayList: $('#dayList'), weekWrap: $('#weekWrap'), week: $('#weekTable'), foot: $('#planFoot'),
     file: $('#planFileInput')
   };
@@ -2716,6 +2747,78 @@
   }
   const longest = (t) => Math.max(4, ...String(t).split(/\s+/).map((w) => w.length));
   const cellAt = (p, d, i) => { const c = p.cells[d + '-' + i]; return c && c.text ? c : null; };
+
+  // ---------- Wecker (über die Kurzbefehle-App) ----------
+  // Web-Apps dürfen die Uhr-App nicht steuern. Der Knopf startet deshalb einen Kurzbefehl und übergibt die Uhrzeit;
+  // der Kurzbefehl prüft den Wecker, schaltet ihn ein oder stellt ihn neu.
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const alarm = Object.assign({ name: 'Schulwecker', days: {} }, store.get('alarm', {}));
+  const saveAlarm = () => store.set('alarm', alarm);
+  const alarmFor = (d) => { const a = alarm.days[d]; return a && a.on && a.time ? a.time : null; };
+  const ICON_ALARM = '<svg class="mi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M5 3.5 2.5 6M19 3.5 21.5 6"/></svg>';
+
+  function runAlarmShortcut(time) {
+    if (!isIOS) { toast.show('Der Wecker funktioniert nur auf dem iPhone (über die Kurzbefehle-App).'); return; }
+    haptic(8);
+    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(alarm.name || 'Schulwecker')
+      + '&input=text&text=' + encodeURIComponent(time);
+  }
+
+  function openAlarmSheet() {
+    const days = JSON.parse(JSON.stringify(alarm.days));
+    let nameIn;
+    sheet.open('Weckzeiten', (body) => {
+      const n = document.createElement('p'); n.className = 'sheet-note'; n.style.margin = '0 1rem -.5rem';
+      n.textContent = 'Am Vorabend erscheint oben neben der ersten Stunde ein Wecker-Knopf. Er prüft den Wecker in der Uhr-App, schaltet ihn ein oder stellt ihn neu.';
+      body.appendChild(n);
+      const box = card(''); body.appendChild(box);
+      DAY_NAMES.forEach((name, d) => {
+        const a = days[d] || (days[d] = { on: false, time: '' });
+        const r = document.createElement('div'); r.className = 'row';
+        r.innerHTML = '<span class="row-label"></span><input type="time" class="alarm-time" aria-label="Weckzeit ' + name + '">'
+          + '<label class="switch"><input type="checkbox" role="switch" aria-label="Wecker ' + name + '"><span></span></label>';
+        r.querySelector('.row-label').textContent = name;
+        const [tIn, sw] = r.querySelectorAll('input');
+        tIn.value = a.time; sw.checked = a.on;
+        const paint = () => r.classList.toggle('alarm-off', !a.on);
+        tIn.addEventListener('input', () => { a.time = tIn.value; if (tIn.value) a.on = sw.checked = true; paint(); });
+        sw.addEventListener('change', () => { a.on = sw.checked; if (a.on && !a.time) tIn.focus(); paint(); });
+        paint();
+        box.appendChild(r);
+      });
+
+      const kt = document.createElement('h4'); kt.className = 'section-title'; kt.textContent = 'Name des Kurzbefehls'; body.appendChild(kt);
+      body.appendChild(card('<input class="sheet-input" id="alName" autocomplete="off" placeholder="Schulwecker">'));
+      nameIn = body.querySelector('#alName'); nameIn.value = alarm.name;
+
+      const st = document.createElement('h4'); st.className = 'section-title'; st.textContent = 'Einmalig einrichten (iPhone)'; body.appendChild(st);
+      body.appendChild(card(`<ol class="steps">
+        <li>App <b>Kurzbefehle</b> öffnen → <b>+</b> → oben den Namen <b class="sc-name"></b> eingeben.</li>
+        <li>Aktion <b>„Alle Wecker abrufen“</b> hinzufügen.</li>
+        <li>Aktion <b>„Wiederholen mit jedem Objekt“</b> hinzufügen (für die Wecker). Darin:
+          <ul>
+            <li><b>„Datum formatieren“</b>: Datum = <i>Wiederholungsobjekt</i> (Uhrzeit), Format <b>Eigene</b> → <code>HH:mm</code></li>
+            <li><b>„Wenn“</b>: <i>Formatiertes Datum</i> <b>ist</b> <i>Kurzbefehleingabe</i>
+              <ul>
+                <li><b>„Wecker umschalten“</b> (bzw. „Wecker einstellen“): <i>Wiederholungsobjekt</i> → <b>Ein</b></li>
+                <li><b>„Text“</b> mit Inhalt <code>ja</code> und danach <b>„Variable festlegen“</b> → Name <code>gefunden</code></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>Nach „Ende Wiederholen“: <b>„Wenn“</b> <i>gefunden</i> <b>hat keinen Wert</b> → <b>„Wecker erstellen“</b>: Uhrzeit = <i>Kurzbefehleingabe</i>, Bezeichnung <code>Schule</code>.</li>
+        <li>Zum Schluss <b>„Mitteilung anzeigen“</b>: „Wecker <i>Kurzbefehleingabe</i> ist aktiv ✓“.</li>
+      </ol>
+      <p class="steps-note">Je nach iOS-Version heißen die Aktionen leicht anders. Beim ersten Start fragt iOS einmal nach der Erlaubnis für die Uhr-App.</p>`));
+      const nm = body.querySelector('.sc-name');
+      const syncName = () => { nm.textContent = '„' + (nameIn.value.trim() || 'Schulwecker') + '“'; };
+      nameIn.addEventListener('input', syncName); syncName();
+    }, () => {
+      alarm.days = days;
+      alarm.name = nameIn.value.trim() || 'Schulwecker';
+      saveAlarm(); renderPlan();
+    });
+  }
 
   // Was läuft gerade, was kommt als Nächstes?
   function nowInfo(p, date = new Date()) {
@@ -2762,6 +2865,15 @@
     const info = nowInfo(p);
     const t = todayIdx();
     pl.now.classList.toggle('quiet', info.kind === 'empty');
+    const alarmDay = info.kind === 'later' && info.tomorrow ? info.d : null;
+    pl.alarmBtn.hidden = alarmDay === null;
+    if (alarmDay !== null) {
+      const tm = alarmFor(alarmDay);
+      pl.alarmBtn.classList.toggle('setup', !tm);
+      pl.alarmV.textContent = tm || 'festlegen';
+      pl.alarmBtn.dataset.time = tm || '';
+      pl.alarmBtn.setAttribute('aria-label', tm ? 'Wecker für ' + DAY_NAMES[alarmDay] + ' um ' + tm + ' prüfen' : 'Weckzeit festlegen');
+    }
     pl.now.style.setProperty('--nc', info.cell ? (PLAN_COLORS[info.cell.color] || 'var(--accent)') : 'var(--label-3)');
     const per = (i) => (i + 1) + '. Stunde';
     const span = (n) => (n.start && n.end ? n.start + ' – ' + n.end : n.end ? 'bis ' + n.end : n.start ? 'ab ' + n.start : 'ganztägig');
@@ -2886,6 +2998,10 @@
       pl.week.innerHTML = html + '</tbody>';
     }
   }
+  pl.alarmBtn.addEventListener('click', () => {
+    const tm = pl.alarmBtn.dataset.time;
+    if (tm) runAlarmShortcut(tm); else openAlarmSheet();
+  });
   pl.week.addEventListener('click', (e) => {
     const b = e.target.closest('.wk-cell');
     if (!b) return;
@@ -3121,6 +3237,7 @@
       { label: 'Neuer Stundenplan', icon: ICON_PLUS, keepFocus: true, onSelect: () => openNewPlanSheet(p) },
       { label: 'Aus Foto oder Datei laden', icon: ICON_DOWN, keepFocus: true, onSelect: () => pl.file.click() });
     if (p) list.push({ label: 'Zeiten bearbeiten', icon: ICON_EDIT, keepFocus: true, onSelect: () => openPlanSheet(p) });
+    list.push({ label: 'Weckzeiten', icon: ICON_ALARM, keepFocus: true, onSelect: openAlarmSheet });
     return list;
   });
 
