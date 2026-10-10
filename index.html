@@ -409,6 +409,15 @@
   .buf input::-webkit-inner-spin-button { -webkit-appearance: none; }
   .step-mini { width: 2rem; height: 2rem; border: 0; border-radius: 50%; background: var(--fill); color: var(--accent); font-size: 1.25rem; font-weight: 600; display: grid; place-items: center; line-height: 1; }
   .trip-results { display: grid; gap: .625rem; }
+  .more-btn {
+    border: 0; border-radius: 999px; padding: .5rem 1rem; justify-self: center;
+    background: var(--fill); color: var(--accent); font-size: .9375rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: .5rem;
+  }
+  .more-btn:disabled { color: var(--label-2); }
+  .trip.too-late { opacity: .78; }
+  .trip.new { animation: tripIn .5s var(--ease-out); }
+  @keyframes tripIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
   .trip-status { padding: 1rem; text-align: center; color: var(--label-2); font-size: .9375rem; display: flex; gap: .5rem; align-items: center; justify-content: center; }
   .spinner { width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid var(--fill-2); border-top-color: var(--accent); animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -427,7 +436,7 @@
   .line-chip { display: inline-flex; align-items: baseline; gap: .25rem; padding: .125rem .5rem; border-radius: .375rem; background: var(--mc); color: #fff; font-weight: 700; font-size: .9375rem; }
   .line-chip small { font-size: .6875rem; font-weight: 600; opacity: .85; }
   .trip-sub { color: var(--label-2); font-size: .8125rem; line-height: 1.4; }
-  .trip-sub .late { color: var(--danger); }
+  .trip-sub .late, .trip-meta .late { color: var(--danger); }
   .trip-legs { border-top: .5px solid var(--sep); margin-top: .25rem; padding-top: .5rem; display: grid; gap: .5rem; }
   .leg { display: grid; grid-template-columns: 3rem 1fr; gap: .5rem; font-size: .875rem; line-height: 1.4; }
   .leg-t { font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -2952,19 +2961,39 @@
       changes: Math.max(0, rides.length - 1)
     };
   }
+  async function askTrips(destQuery, time, isArrival) {
+    const [from, to] = await Promise.all([resolvePoint(transit.home), resolvePoint(destQuery)]);
+    const j = await vvo('tr/trips', {
+      origin: from, destination: to, time: isoLocal(time), isarrivaltime: isArrival, shorttermchanges: true, mobilityRestriction: 'None',
+      standardSettings: { maxChanges: 'Unlimited', walkingSpeed: 'Normal', footpathToStop: 5, includeAlternativeStops: true }
+    });
+    return (j.Routes || []).map(summarize).filter((x) => x.arr && x.dep);
+  }
+  const tripKey = (x) => x.dep.getTime() + '|' + x.arr.getTime() + '|' + x.rides.map((r) => r.line).join();
+  const uniq = (list, seen = new Set()) => list.filter((x) => { const k = tripKey(x); if (seen.has(k)) return false; seen.add(k); return true; });
+
   // Drei Verbindungen, die spätestens zur gewünschten Zeit ankommen – die spätesten zuerst gewählt, dann nach Abfahrt sortiert
   async function findTrips(destQuery, arriveBy) {
-    const [from, to] = await Promise.all([resolvePoint(transit.home), resolvePoint(destQuery)]);
-    const ask = (t) => vvo('tr/trips', {
-      origin: from, destination: to, time: isoLocal(t), isarrivaltime: true, shorttermchanges: true, mobilityRestriction: 'None',
-      standardSettings: { maxChanges: 'Unlimited', walkingSpeed: 'Normal', footpathToStop: 5, includeAlternativeStops: true }
-    }).then((j) => (j.Routes || []).map(summarize));
-    const ok = (list) => list.filter((x) => x.arr && x.dep && x.arr.getTime() <= arriveBy.getTime() + 30000);
-    let found = ok(await ask(arriveBy));
-    if (found.length < 3) found = found.concat(ok(await ask(new Date(arriveBy.getTime() - 25 * 60000))));
-    const seen = new Set();
-    found = found.filter((x) => { const k = x.dep.getTime() + '|' + x.arr.getTime() + '|' + x.rides.map((r) => r.line).join(); if (seen.has(k)) return false; seen.add(k); return true; });
-    return found.sort((a, b) => b.arr - a.arr || b.dep - a.dep).slice(0, 3).sort((a, b) => a.dep - b.dep);
+    const ok = (list) => list.filter((x) => x.arr.getTime() <= arriveBy.getTime() + 30000);
+    let found = ok(await askTrips(destQuery, arriveBy, true));
+    if (found.length < 3) found = found.concat(ok(await askTrips(destQuery, new Date(arriveBy.getTime() - 25 * 60000), true)));
+    return uniq(found).sort((a, b) => b.arr - a.arr || b.dep - a.dep).slice(0, 3).sort((a, b) => a.dep - b.dep);
+  }
+  // Weitere Verbindungen: „früher“ = kommen vor der frühesten gezeigten an, „später“ = fahren nach der spätesten gezeigten ab
+  async function moreTrips(destQuery, shown, dir) {
+    const seen = new Set(shown.map(tripKey));
+    if (dir === 'earlier') {
+      const first = Math.min(...shown.map((x) => x.arr.getTime()));
+      let got = [];
+      for (const back of [1, 30]) {
+        got = uniq((await askTrips(destQuery, new Date(first - back * 60000), true)).filter((x) => x.arr.getTime() < first), seen);
+        if (got.length) break;
+      }
+      return got.sort((a, b) => b.arr - a.arr).slice(0, 3);
+    }
+    const last = Math.max(...shown.map((x) => x.dep.getTime()));
+    const got = uniq((await askTrips(destQuery, new Date(last + 60000), false)).filter((x) => x.dep.getTime() > last), seen);
+    return got.sort((a, b) => a.dep - b.dep).slice(0, 3);
   }
 
   // Erstes Ereignis eines Tages: ganztägiger Termin oder erste Stunde mit Uhrzeit
@@ -2999,14 +3028,15 @@
     const c = MOT_COLOR[l.type] || '#6e6e73';
     return '<span class="line-chip" style="--mc:' + c + '"><small>' + esc(MOT_NAME[l.type] || '') + '</small>' + esc(l.line || '') + '</span>';
   }
-  function tripCard(x, isToday) {
+  function tripCard(x, isToday, arriveBy) {
     const el = document.createElement('button');
-    el.className = 'trip';
+    const tooLate = arriveBy && x.arr.getTime() > arriveBy.getTime() + 30000;
+    el.className = 'trip' + (tooLate ? ' too-late' : '');
     const first = x.rides[0];
     const late = first && first.dep && first.depPlan && first.dep - first.depPlan >= 60000 ? Math.round((first.dep - first.depPlan) / 60000) : 0;
     const inMin = isToday ? Math.round((x.dep - Date.now()) / 60000) : null;
     el.innerHTML = '<div class="trip-top"><span class="trip-times">' + hm(x.dep) + ' <span class="arrow">→</span> ' + hm(x.arr) + '</span>'
-      + '<span class="trip-meta">' + x.dur + ' Min. · ' + (x.changes ? x.changes + (x.changes === 1 ? ' Umstieg' : ' Umstiege') : 'direkt') + '</span></div>'
+      + '<span class="trip-meta">' + (tooLate ? '<b class="late">Ankunft nach ' + hm(arriveBy) + '</b> · ' : '') + x.dur + ' Min. · ' + (x.changes ? x.changes + (x.changes === 1 ? ' Umstieg' : ' Umstiege') : 'direkt') + '</span></div>'
       + '<div class="trip-lines">' + x.rides.map(legChip).join('<span class="sep">›</span>') + '</div>'
       + '<div class="trip-sub">' + (first ? esc(first.line ? (MOT_NAME[first.type] || '') + ' ' + first.line : '') + ' ab ' + esc(first.from) + ' ' + hm(first.dep)
         + (first.platform ? ' · Steig ' + esc(first.platform) : '') + (late ? ' <b class="late">+' + late + '</b>' : '') : '')
@@ -3037,6 +3067,38 @@
       ui.buf.value = buffer;
       ui.go.disabled = !a || !dest;
     };
+    let shown = [];
+    function renderTrips(a, focusKey) {
+      ui.res.innerHTML = '';
+      const h = document.createElement('h4'); h.className = 'section-title'; h.style.margin = '.25rem 0 -.25rem 1rem';
+      h.textContent = 'Ankunft bis ' + hm(a) + ' · Ziel ' + dest.split(',')[0];
+      ui.res.appendChild(h);
+      const more = (dir, label) => {
+        const b = document.createElement('button'); b.className = 'more-btn press'; b.textContent = label;
+        b.addEventListener('click', async () => {
+          b.disabled = true; b.innerHTML = '<span class="spinner"></span> Suche …';
+          try {
+            const add = await moreTrips(dest, shown, dir);
+            if (!add.length) { b.textContent = dir === 'earlier' ? 'Keine früheren gefunden' : 'Keine späteren gefunden'; return; }
+            shown = shown.concat(add).sort((x, y) => x.dep - y.dep);
+            renderTrips(a, tripKey(dir === 'earlier' ? add[add.length - 1] : add[0]));
+          } catch (e) { b.disabled = false; b.textContent = 'Keine Verbindung – nochmal versuchen'; }
+        });
+        return b;
+      };
+      ui.res.appendChild(more('earlier', '↑ Früher'));
+      let focusEl = null;
+      shown.forEach((x) => {
+        const c = tripCard(x, nx.k === 0, a);
+        if (focusKey && tripKey(x) === focusKey) { focusEl = c; c.classList.add('new'); }
+        ui.res.appendChild(c);
+      });
+      ui.res.appendChild(more('later', '↓ Später'));
+      const src = document.createElement('p'); src.className = 'sheet-note'; src.style.margin = '0 1rem';
+      src.textContent = 'Fahrplandaten: VVO/DVB, inkl. Echtzeit, sofern verfügbar. Antippen zeigt alle Umstiege.';
+      ui.res.appendChild(src);
+      if (focusEl) setTimeout(() => focusEl.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'nearest' }), 40);
+    }
     async function search() {
       const a = arriveBy();
       if (!a || !dest) return false;
@@ -3045,16 +3107,9 @@
       if (nx.ev.note && !dayNote(p, nx.d).start) { p.dayNotes[nx.d].start = start; p.at = now(); saveBook(); renderPlan(); }
       ui.res.innerHTML = '<div class="trip-status"><span class="spinner"></span> Verbindungen werden gesucht …</div>';
       try {
-        const list = await findTrips(dest, a);
-        ui.res.innerHTML = '';
-        if (!list.length) { ui.res.innerHTML = '<div class="trip-status">Keine passende Verbindung gefunden. Versuch es mit mehr Minuten Puffer.</div>'; return false; }
-        const h = document.createElement('h4'); h.className = 'section-title'; h.style.margin = '.25rem 0 -.25rem 1rem';
-        h.textContent = 'Ankunft bis ' + hm(a) + ' · Ziel ' + dest.split(',')[0];
-        ui.res.appendChild(h);
-        list.forEach((x) => ui.res.appendChild(tripCard(x, nx.k === 0)));
-        const src = document.createElement('p'); src.className = 'sheet-note'; src.style.margin = '0 1rem';
-        src.textContent = 'Fahrplandaten: VVO/DVB, inkl. Echtzeit, sofern verfügbar. Antippen zeigt alle Umstiege.';
-        ui.res.appendChild(src);
+        shown = await findTrips(dest, a);
+        if (!shown.length) { ui.res.innerHTML = '<div class="trip-status">Keine passende Verbindung gefunden. Versuch es mit mehr Minuten Puffer.</div>'; return false; }
+        renderTrips(a);
         haptic(8);
         setTimeout(() => ui.res.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' }), 60);
       } catch (e) {
