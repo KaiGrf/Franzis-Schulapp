@@ -112,7 +112,8 @@ In der Karte oben gibt es den Knopf **Fahrt**. Er sucht Verbindungen zum ersten 
 nächsten Schultags: Minuten „vorher ankommen“ einstellen – die App zeigt Beginn und
 spätestmögliche Ankunft – und **Verbindungen suchen** liefert drei passende Fahrten der DVB/des VVO
 (mit Echtzeit, sofern verfügbar). Mit **↑ Früher** und **↓ Später** lassen sich weitere
-Verbindungen nachladen; solche, die nach der gewünschten Zeit ankommen, sind markiert.
+Verbindungen nachladen. **Orange** = kommt nach der gewünschten Zeit, aber vor Beginn an (knapp);
+**Rot** = kommt erst nach Beginn der ersten Stunde an.
 
 Start und Ziel je Wochentag stehen im Stundenplan-Menü unter **Verbindungen (DVB)**
 (vorbelegt: Start Voglerstraße 46; Mo–Do Rudolf-Bergander-Ring 3; Fr Glacisstraße 2).
@@ -124,7 +125,7 @@ Für die Suche werden nur diese Adressen an die Fahrplanauskunft des VVO übermi
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v12';` hochzählen (`'v13'`, `'v14'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v13';` hochzählen (`'v14'`, `'v15'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.

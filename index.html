@@ -415,7 +415,12 @@
     display: inline-flex; align-items: center; gap: .5rem;
   }
   .more-btn:disabled { color: var(--label-2); }
-  .trip.too-late { opacity: .78; }
+  .trip.too-late, .trip.after-start { --tc: #ff9500; background: color-mix(in srgb, var(--tc) 12%, var(--card)); box-shadow: inset 4px 0 0 var(--tc), var(--shadow); }
+  .trip.after-start { --tc: var(--danger); }
+  [data-theme="dark"] .sheet .trip.too-late, [data-theme="dark"] .sheet .trip.after-start { background: color-mix(in srgb, var(--tc) 16%, #2c2c2e); }
+  .trip .flag { font-size: .75rem; padding: .0625rem .4375rem; border-radius: 99px; color: #fff; font-weight: 700; }
+  .trip .flag.orange { background: #ff9500; }
+  .trip .flag.red { background: var(--danger); }
   .trip.new { animation: tripIn .5s var(--ease-out); }
   @keyframes tripIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
   .trip-status { padding: 1rem; text-align: center; color: var(--label-2); font-size: .9375rem; display: flex; gap: .5rem; align-items: center; justify-content: center; }
@@ -3028,15 +3033,18 @@
     const c = MOT_COLOR[l.type] || '#6e6e73';
     return '<span class="line-chip" style="--mc:' + c + '"><small>' + esc(MOT_NAME[l.type] || '') + '</small>' + esc(l.line || '') + '</span>';
   }
-  function tripCard(x, isToday, arriveBy) {
+  // Ampel: knapp = nach Wunsch-Ankunft, aber vor Beginn · zu spät = nach Beginn der ersten Stunde
+  function tripCard(x, isToday, arriveBy, startAt) {
     const el = document.createElement('button');
-    const tooLate = arriveBy && x.arr.getTime() > arriveBy.getTime() + 30000;
-    el.className = 'trip' + (tooLate ? ' too-late' : '');
+    const afterStart = startAt && x.arr.getTime() > startAt.getTime();
+    const tooLate = !afterStart && arriveBy && x.arr.getTime() > arriveBy.getTime() + 30000;
+    el.className = 'trip' + (afterStart ? ' after-start' : tooLate ? ' too-late' : '');
     const first = x.rides[0];
     const late = first && first.dep && first.depPlan && first.dep - first.depPlan >= 60000 ? Math.round((first.dep - first.depPlan) / 60000) : 0;
     const inMin = isToday ? Math.round((x.dep - Date.now()) / 60000) : null;
     el.innerHTML = '<div class="trip-top"><span class="trip-times">' + hm(x.dep) + ' <span class="arrow">→</span> ' + hm(x.arr) + '</span>'
-      + '<span class="trip-meta">' + (tooLate ? '<b class="late">Ankunft nach ' + hm(arriveBy) + '</b> · ' : '') + x.dur + ' Min. · ' + (x.changes ? x.changes + (x.changes === 1 ? ' Umstieg' : ' Umstiege') : 'direkt') + '</span></div>'
+      + '<span class="trip-meta">' + (afterStart ? '<b class="flag red">nach Beginn ' + hm(startAt) + '</b> · '
+        : tooLate ? '<b class="flag orange">knapp · nach ' + hm(arriveBy) + '</b> · ' : '') + x.dur + ' Min. · ' + (x.changes ? x.changes + (x.changes === 1 ? ' Umstieg' : ' Umstiege') : 'direkt') + '</span></div>'
       + '<div class="trip-lines">' + x.rides.map(legChip).join('<span class="sep">›</span>') + '</div>'
       + '<div class="trip-sub">' + (first ? esc(first.line ? (MOT_NAME[first.type] || '') + ' ' + first.line : '') + ' ab ' + esc(first.from) + ' ' + hm(first.dep)
         + (first.platform ? ' · Steig ' + esc(first.platform) : '') + (late ? ' <b class="late">+' + late + '</b>' : '') : '')
@@ -3089,7 +3097,8 @@
       ui.res.appendChild(more('earlier', '↑ Früher'));
       let focusEl = null;
       shown.forEach((x) => {
-        const c = tripCard(x, nx.k === 0, a);
+        const s0 = toMin(start);
+        const c = tripCard(x, nx.k === 0, a, s0 === null ? null : new Date(nx.date.getFullYear(), nx.date.getMonth(), nx.date.getDate(), 0, s0));
         if (focusKey && tripKey(x) === focusKey) { focusEl = c; c.classList.add('new'); }
         ui.res.appendChild(c);
       });
