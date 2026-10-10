@@ -1,7 +1,7 @@
 // Franzis Schulapp – Service Worker
 // App-Dateien werden beim Installieren gespeichert, damit die App offline startet.
 // Bei jeder Änderung an index.html o. Ä. VERSION erhöhen – dann holt sich die App das Update.
-const VERSION = 'v14';
+const VERSION = 'v15';
 const APP_CACHE = 'notenrechner-app-' + VERSION;
 const RUNTIME_CACHE = 'notenrechner-runtime';
 
@@ -17,7 +17,7 @@ const APP_FILES = [
 ];
 
 // Fremde Quellen, die zusätzlich zwischengespeichert werden (Schrift, Texterkennung)
-const RUNTIME_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'];
+const RUNTIME_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com'];
 
 self.addEventListener('install', (event) => {
   // cache: 'reload' – immer frisch vom Server holen, nicht aus dem HTTP-Cache des Browsers

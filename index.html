@@ -431,7 +431,9 @@
     background: var(--card); box-shadow: var(--shadow); display: grid; gap: .375rem; transition: transform .1s ease-out;
   }
   [data-theme="dark"] .sheet .trip { background: #2c2c2e; }
-  .trip:active { transform: scale(.985); }
+  .trip { cursor: pointer; }
+  .trip:active:not(:has(.pin:active, .map-btn:active)) { transform: scale(.985); }
+  .trip:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); }
   .trip-top { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
   .trip-times { font-family: var(--font-display); font-size: 1.375rem; font-weight: 700; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
   .trip-times .arrow { color: var(--label-3); font-weight: 500; }
@@ -456,6 +458,50 @@
   .leg.xfer.short .xfer-k { color: var(--danger); }
   .leg-t { font-weight: 600; font-variant-numeric: tabular-nums; }
   .leg-b small { color: var(--label-2); }
+  .pin {
+    display: inline-grid; place-items: center; width: 1.625rem; height: 1.625rem; margin-left: .375rem; vertical-align: middle;
+    border-radius: 50%; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent);
+  }
+  .pin svg { width: .9375rem; height: .9375rem; }
+  .pin:active { transform: scale(.9); }
+  .leg-actions { display: flex; justify-content: center; padding-top: .25rem; }
+  .map-btn { border: 0; border-radius: 999px; padding: .4375rem 1rem; background: var(--accent); color: #fff; font-weight: 600; font-size: .9375rem; }
+  .mapview {
+    position: fixed; inset: 0; z-index: 75; display: flex; flex-direction: column; background: var(--bg);
+    will-change: transform, opacity;
+  }
+  .mapbar {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    padding: calc(.625rem + env(safe-area-inset-top)) 1rem .625rem; background: var(--material);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: .5px solid var(--sep); position: relative; z-index: 2;
+  }
+  .mapbar h3 { margin: 0; font-size: 1.0625rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mapbar .link-btn { justify-self: end; font-size: 1.0625rem; font-weight: 600; }
+  #mapEl { flex: 1; min-height: 0; background: var(--fill); }
+  [data-theme="dark"] #mapEl .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.6); }
+  .map-list {
+    max-height: 38vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding: .5rem 1rem calc(.75rem + env(safe-area-inset-bottom)); background: var(--card); border-top: .5px solid var(--sep);
+  }
+  .map-item { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; }
+  .map-item + .map-item { border-top: .5px solid var(--sep); }
+  .mi-dot { width: .75rem; height: .75rem; border-radius: 50%; flex: none; }
+  .mi-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
+  .mi-txt b { font-size: .9375rem; }
+  .mi-txt small { color: var(--label-2); font-size: .8125rem; }
+  .mi-txt .late { color: var(--danger); font-weight: 600; }
+  .mk-wrap { background: none; border: 0; }
+  .mk {
+    display: grid; place-items: center; min-width: 1.75rem; height: 1.75rem; padding: 0 .375rem; border-radius: 999px;
+    transform: translate(-50%, -50%); font-weight: 800; font-size: .8125rem; color: #fff; background: var(--mc, #0a84ff);
+    border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); white-space: nowrap; font-family: var(--font);
+  }
+  .mk.arr { background: #fff; color: var(--mc); border-color: var(--mc); }
+  .mk.home { background: #34c759; }
+  .mk.dest { background: #ff3b30; }
+  .leaflet-popup-content { font-family: var(--font); font-size: .875rem; line-height: 1.45; }
+  .leaflet-popup-content .line-chip { font-size: .8125rem; }
   .dest-row .row-label { flex: 0 0 2rem; font-weight: 600; }
   .dest-in { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 1rem; padding: .25rem 0; }
   .alarm-btn {
@@ -849,6 +895,7 @@
     .theme-btn svg, .switch span::after, .seg-indicator::before, .slider-thumb::before { transition-property: opacity, background-color; }
   }
   @media (prefers-reduced-transparency: reduce) {
+    .mapbar { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
     .navbar { background: color-mix(in srgb, var(--bg) calc(var(--bar) * 100%), transparent); -webkit-backdrop-filter: none; backdrop-filter: none; }
     .navbar::after { display: none; }
     .toast, .menu { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -1165,6 +1212,15 @@
 </nav>
 <input type="file" id="planFileInput" accept="image/*,.csv,.txt,text/csv,text/plain" hidden>
 
+<div class="mapview" id="mapView" role="dialog" aria-modal="true" aria-labelledby="mapTitle" hidden>
+  <div class="mapbar">
+    <span></span>
+    <h3 id="mapTitle">Karte</h3>
+    <button class="link-btn strong" id="mapClose">Fertig</button>
+  </div>
+  <div id="mapEl"></div>
+  <div class="map-list" id="mapList"></div>
+</div>
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
@@ -2954,6 +3010,124 @@
     saveTransit();
     return transit.points[q];
   }
+  // ---------- Karte: Steige & Linienverlauf ----------
+  // Die DVB liefert Koordinaten im Gauß-Krüger-Format (DHDN, Zone 4). Umrechnung nach WGS84 (GPS):
+  // inverse Transversal-Mercator auf dem Bessel-Ellipsoid + 7-Parameter-Helmert-Transformation.
+  function gk2wgs(h, r) {
+    if (!h || !r) return null;
+    const a = 6377397.155, f = 1 / 299.1528128, e2 = 2 * f - f * f, ep2 = e2 / (1 - e2);
+    const zone = Math.floor(r / 1e6), L0 = zone * 3 * Math.PI / 180, y = r - zone * 1e6 - 500000;
+    const n = f / (2 - f), A = a / (1 + n) * (1 + n * n / 4 + n ** 4 / 64), xi = h / A;
+    const pf = xi + (3 * n / 2 - 27 * n ** 3 / 32) * Math.sin(2 * xi) + (21 * n * n / 16 - 55 * n ** 4 / 32) * Math.sin(4 * xi)
+      + (151 * n ** 3 / 96) * Math.sin(6 * xi) + (1097 * n ** 4 / 512) * Math.sin(8 * xi);
+    const N = a / Math.sqrt(1 - e2 * Math.sin(pf) ** 2), t = Math.tan(pf), eta2 = ep2 * Math.cos(pf) ** 2, c = Math.cos(pf);
+    const phi = pf - t * (1 + eta2) / (2 * N * N) * y * y + t / (24 * N ** 4) * (5 + 3 * t * t + 6 * eta2 - 6 * t * t * eta2) * y ** 4;
+    const lam = L0 + y / (N * c) - (1 + 2 * t * t + eta2) * y ** 3 / (6 * N ** 3 * c) + (5 + 28 * t * t + 24 * t ** 4) * y ** 5 / (120 * N ** 5 * c);
+    const Nb = a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2);
+    const X = Nb * Math.cos(phi) * Math.cos(lam), Y = Nb * Math.cos(phi) * Math.sin(lam), Z = Nb * (1 - e2) * Math.sin(phi);
+    const k = Math.PI / 180 / 3600, rx = 0.202 * k, ry = 0.045 * k, rz = -2.455 * k, s = 6.7e-6;
+    const X2 = 598.1 + (1 + s) * (X - rz * Y + ry * Z), Y2 = 73.7 + (1 + s) * (rz * X + Y - rx * Z), Z2 = 418.2 + (1 + s) * (-ry * X + rx * Y + Z);
+    const aw = 6378137, fw = 1 / 298.257223563, e2w = 2 * fw - fw * fw, p = Math.hypot(X2, Y2);
+    let lat = Math.atan2(Z2, p * (1 - e2w));
+    for (let i = 0; i < 6; i++) { const Nw = aw / Math.sqrt(1 - e2w * Math.sin(lat) ** 2); lat = Math.atan2(Z2 + e2w * Nw * Math.sin(lat), p); }
+    return [lat * 180 / Math.PI, Math.atan2(Y2, X2) * 180 / Math.PI];
+  }
+  const appleMaps = (pos, label) => 'https://maps.apple.com/?daddr=' + pos[0].toFixed(6) + ',' + pos[1].toFixed(6)
+    + '&dirflg=w&q=' + encodeURIComponent(label);
+  const pinLink = (pos, label) => (pos ? '<a class="pin" href="' + appleMaps(pos, label) + '" target="_blank" rel="noopener" aria-label="' + esc(label) + ' in Apple Karten öffnen">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></a>' : '');
+
+  // Leaflet (Kartenbibliothek) erst laden, wenn die Karte geöffnet wird
+  let leafletLoading = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (!leafletLoading) {
+      leafletLoading = new Promise((resolve, reject) => {
+        const css = document.createElement('link'); css.rel = 'stylesheet';
+        css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+        document.head.appendChild(css);
+        const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+        sc.onload = resolve; sc.onerror = () => { leafletLoading = null; reject(new Error('load')); };
+        document.head.appendChild(sc);
+      });
+    }
+    return leafletLoading;
+  }
+
+  const mv = { node: $('#mapView'), title: $('#mapTitle'), el: $('#mapEl'), list: $('#mapList'), map: null, layer: null };
+  const mapSpring = new Spring(1, (y) => {
+    mv.node.style.transform = `translate3d(0, ${y * 100}%, 0)`;
+    mv.node.style.opacity = clamp(1.4 - y * 1.4, 0, 1);
+    if (y >= 0.999 && mv.node.dataset.open !== '1') mv.node.hidden = true;
+  }, 0.001);
+  mapSpring.jump(1);
+  function closeMap() { mv.node.dataset.open = '0'; mapSpring.set(1, { response: 0.35, damping: 1 }); }
+  $('#mapClose').addEventListener('click', closeMap);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && mv.node.dataset.open === '1') { e.stopImmediatePropagation(); closeMap(); } }, true);
+
+  async function openMap(x) {
+    mv.node.hidden = false; mv.node.dataset.open = '1';
+    mapSpring.set(0, { response: 0.4, damping: 1 });     // kommt von unten, geht nach unten
+    mv.title.textContent = hm(x.dep) + ' → ' + hm(x.arr);
+    mv.list.innerHTML = '';
+    try { await loadLeaflet(); } catch (e) { mv.el.innerHTML = '<div class="trip-status">Die Karte braucht eine Internetverbindung.</div>'; return; }
+    if (!mv.map) {
+      mv.el.innerHTML = '';
+      mv.map = L.map(mv.el, { zoomControl: false, attributionControl: true });
+      L.control.zoom({ position: 'topright' }).addTo(mv.map);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mv.map);
+    }
+    if (mv.layer) mv.layer.remove();
+    mv.layer = L.layerGroup().addTo(mv.map);
+    const bounds = [];
+    // Linienverlauf
+    (x.mapData || []).forEach((str) => {
+      const parts = String(str).split('|'), type = parts[0], nums = parts.slice(1).filter((v) => v !== '').map(Number);
+      const pts = [];
+      for (let i = 0; i + 1 < nums.length; i += 2) { const q = gk2wgs(nums[i], nums[i + 1]); if (q) pts.push(q); }
+      if (pts.length < 2) return;
+      const walk = /Footpath|Fussweg|Stairs|Escalator|Elevator/i.test(type);
+      const color = walk ? '#8e8e93' : (MOT_COLOR[type] || MOT_COLOR[{ Bus: 'Bus', Tram: 'Tram' }[type]] || '#0a84ff');
+      L.polyline(pts, { color, weight: walk ? 4 : 6, opacity: .9, dashArray: walk ? '2 8' : null, lineCap: 'round' }).addTo(mv.layer);
+      pts.forEach((q) => bounds.push(q));
+    });
+    // Markierungen: Start, Steige, Ziel
+    const mark = (pos, html, cls, popup) => {
+      if (!pos) return;
+      bounds.push(pos);
+      L.marker(pos, { icon: L.divIcon({ className: 'mk-wrap', html: '<span class="mk ' + cls + '">' + html + '</span>', iconSize: null }) })
+        .bindPopup(popup, { closeButton: false }).addTo(mv.layer);
+    };
+    const item = (pos, title, sub, color) => {
+      const li = document.createElement('div'); li.className = 'map-item';
+      li.innerHTML = '<span class="mi-dot" style="background:' + color + '"></span><span class="mi-txt"><b>' + title + '</b><small>' + sub + '</small></span>' + pinLink(pos, title.replace(/<[^>]+>/g, ''));
+      if (pos) li.querySelector('.mi-txt').addEventListener('click', () => mv.map.setView(pos, 18, { animate: true }));
+      mv.list.appendChild(li);
+    };
+    const startPos = x.legs[0] && x.legs[0].fromPos, endPos = x.legs[x.legs.length - 1] && x.legs[x.legs.length - 1].toPos;
+    mark(startPos, '●', 'home', '<b>Start</b><br>' + esc(transit.home));
+    item(startPos, 'Start', esc(transit.home) + ' · ' + hm(x.dep), '#34c759');
+    x.rides.forEach((r, k) => {
+      const c = MOT_COLOR[r.type] || '#6e6e73';
+      const lbl = esc(r.from) + (r.platform ? ' · Steig ' + esc(r.platform) : '');
+      mark(r.fromPos, esc(r.platform || '↑'), 'stop" style="--mc:' + c, '<b>' + lbl + '</b><br>' + hm(r.dep) + ' ' + legChip(r) + ' Richtung ' + esc(r.dir || '')
+        + (r.fromPos ? '<br><a href="' + appleMaps(r.fromPos, r.from + ' Steig ' + (r.platform || '')) + '" target="_blank" rel="noopener">In Apple Karten öffnen</a>' : ''));
+      item(r.fromPos, lbl, 'ab ' + hm(r.dep) + ' · ' + (MOT_NAME[r.type] || '') + ' ' + esc(r.line || '') + ' Richtung ' + esc(r.dir || ''), c);
+      const t = x.transfers[k];
+      const albl = esc(r.to) + (r.arrPlatform ? ' · Steig ' + esc(r.arrPlatform) : '');
+      mark(r.toPos, esc(r.arrPlatform || '↓'), 'stop arr" style="--mc:' + c, '<b>' + albl + '</b><br>an ' + hm(r.arr)
+        + (t ? '<br>Umstieg ' + t.min + ' Min.' : '')
+        + (r.toPos ? '<br><a href="' + appleMaps(r.toPos, r.to + ' Steig ' + (r.arrPlatform || '')) + '" target="_blank" rel="noopener">In Apple Karten öffnen</a>' : ''));
+      item(r.toPos, albl, 'an ' + hm(r.arr) + (t ? ' · <span class="' + (t.short ? 'late' : '') + '">Umstieg ' + t.min + ' Min.</span>' : ''), c);
+    });
+    mark(endPos, '⚑', 'dest', '<b>Ziel</b><br>an ' + hm(x.arr));
+    item(endPos, 'Ziel', esc((transit.dest[(new Date(x.arr).getDay() + 6) % 7] || '').split(',')[0]) + ' · an ' + hm(x.arr), '#ff3b30');
+    setTimeout(() => {
+      mv.map.invalidateSize();
+      if (bounds.length) mv.map.fitBounds(bounds, { padding: [36, 36] });
+    }, 60);
+  }
+
   function summarize(r) {
     const legs = (r.PartialRoutes || []).map((p) => {
       const st = p.RegularStops || [], a = st[0], b = st[st.length - 1], mot = p.Mot || {};
@@ -2964,7 +3138,9 @@
         depPlan: a ? dvbTime(a.DepartureTime) : null,
         arr: b ? (dvbTime(b.ArrivalRealTime) || dvbTime(b.ArrivalTime)) : null,
         platform: a && a.Platform ? a.Platform.Name : '',
-        arrPlatform: b && b.Platform ? b.Platform.Name : ''
+        arrPlatform: b && b.Platform ? b.Platform.Name : '',
+        fromPos: a ? gk2wgs(Number(a.Latitude), Number(a.Longitude)) : null,
+        toPos: b ? gk2wgs(Number(b.Latitude), Number(b.Longitude)) : null
       };
     });
     const withTime = legs.filter((l) => l.dep || l.arr);
@@ -2980,7 +3156,7 @@
       transfers.push({ at: a.to, to: b.from, fromPl: a.arrPlatform, toPl: b.platform, min, walk, short: min !== null && min < 5 });
     }
     return {
-      legs, rides, transfers, price: r.Price, dur: r.Duration,
+      legs, rides, transfers, price: r.Price, dur: r.Duration, mapData: r.MapData || [],
       dep: withTime.length ? (withTime[0].dep || withTime[0].arr) : null,
       arr: withTime.length ? (withTime[withTime.length - 1].arr || withTime[withTime.length - 1].dep) : null,
       changes: Math.max(0, rides.length - 1)
@@ -3064,8 +3240,8 @@
     const before = x.legs.slice(0, firstRide).filter(isWalk);
     if (before.length) row(hm(before[0].dep), '🚶 ' + before.reduce((s0, l) => s0 + (l.dur || 0), 0) + ' Min. Fußweg zu ' + esc(x.rides[0] ? x.rides[0].from : before[before.length - 1].to), 'walk');
     x.rides.forEach((r, k) => {
-      row(hm(r.dep), legChip(r) + ' <span class="dir">Richtung ' + esc(r.dir || '') + '</span><br><small>ab ' + esc(r.from) + steig(r.platform) + '</small>', 'ride');
-      row(hm(r.arr), '<small>an ' + esc(r.to) + steig(r.arrPlatform) + '</small>', 'ride-end');
+      row(hm(r.dep), legChip(r) + ' <span class="dir">Richtung ' + esc(r.dir || '') + '</span><br><small>ab ' + esc(r.from) + steig(r.platform) + '</small>' + pinLink(r.fromPos, r.from + ' Steig ' + (r.platform || '')), 'ride');
+      row(hm(r.arr), '<small>an ' + esc(r.to) + steig(r.arrPlatform) + '</small>' + pinLink(r.toPos, r.to + ' Steig ' + (r.arrPlatform || '')), 'ride-end');
       const t = x.transfers[k];
       if (t) {
         const same = t.at === t.to;
@@ -3080,11 +3256,13 @@
     const after = x.legs.slice(lastRide + 1).filter(isWalk);
     if (after.length) row(hm(after[after.length - 1].arr), '🚶 ' + after.reduce((s0, l) => s0 + (l.dur || 0), 0) + ' Min. Fußweg zum Ziel', 'walk');
     if (!x.rides.length) row(hm(x.dep), '🚶 nur Fußweg (' + x.dur + ' Min.)', 'walk');
+    rows.push('<div class="leg-actions"><button class="map-btn press">Auf Karte zeigen</button></div>');
     return rows.join('');
   }
 
   function tripCard(x, isToday, arriveBy, startAt) {
-    const el = document.createElement('button');
+    const el = document.createElement('div');
+    el.setAttribute('role', 'button'); el.tabIndex = 0;
     const afterStart = startAt && x.arr.getTime() > startAt.getTime();
     const tooLate = !afterStart && arriveBy && x.arr.getTime() > arriveBy.getTime() + 30000;
     el.className = 'trip' + (afterStart ? ' after-start' : tooLate ? ' too-late' : '');
@@ -3100,7 +3278,13 @@
         + (inMin !== null && inMin >= 0 ? ' · losgehen in ' + fmtDur(inMin) : '')
         + (x.transfers.some((t) => t.short) ? ' · <b class="late">knapper Umstieg (' + Math.min(...x.transfers.filter((t) => t.short).map((t) => t.min)) + ' Min.)</b>' : '') + '</div>'
       + '<div class="trip-legs" hidden>' + legsHtml(x) + '</div>';
-    el.addEventListener('click', () => { const lg = el.querySelector('.trip-legs'); lg.hidden = !lg.hidden; el.classList.toggle('open', !lg.hidden); });
+    const toggle = () => { const lg = el.querySelector('.trip-legs'); lg.hidden = !lg.hidden; el.classList.toggle('open', !lg.hidden); el.setAttribute('aria-expanded', !lg.hidden); };
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.pin')) return;                       // Apple Karten öffnet sich über den Link
+      if (e.target.closest('.map-btn')) { openMap(x); return; }
+      toggle();
+    });
+    el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); toggle(); } });
     return el;
   }
 
