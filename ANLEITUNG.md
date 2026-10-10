@@ -84,9 +84,21 @@ sind die Daten auf diesem Gerät weg.
 
 Im Stundenplan-Menü unter **Weckzeiten** für jeden Wochentag eine Uhrzeit einstellen.
 Am Vorabend erscheint oben neben der ersten Stunde ein **Wecker-Knopf**. Er startet den
-Kurzbefehl **„Schulwecker“**, der prüft, ob der Wecker in der Uhr-App aktiv ist, ihn
-einschaltet oder neu stellt. Die Schritte zum einmaligen Einrichten des Kurzbefehls öffnet der
-**?**-Knopf im Fenster *Weckzeiten*.
+Kurzbefehl **„Schulwecker“** und übergibt die Uhrzeit.
+
+**Kurzbefehl einmalig einrichten** (auch über den **?**-Knopf im Fenster *Weckzeiten*):
+
+1. App **Kurzbefehle** öffnen → **+** → Name `Schulwecker`.
+2. Im Suchfeld **„Wecker“** eingeben – dort stehen alle Aktionen der Uhr-App.
+3. **„Wecker suchen“** → Filter: *Name* **ist** `Schule`.
+4. **„Wecker löschen“** (nimmt die gefundenen Wecker). Falls angeboten: „Vor dem Löschen bestätigen“ ausschalten.
+5. **„Daten aus Eingabe abrufen“** → Eingabe: *Kurzbefehleingabe* (macht aus „07:00“ eine Uhrzeit).
+6. **„Wecker hinzufügen“** (ältere Versionen: „Wecker erstellen“) → Uhrzeit: *Daten*, Name `Schule`, nicht wiederholen.
+7. **„Mitteilung anzeigen“** → `Wecker` *Kurzbefehleingabe* `ist aktiv ✓`.
+8. Erscheint oben ein Block „Erhält … Eingabe“: dort **Text** wählen.
+
+Ergebnis: Es gibt immer genau einen Wecker „Schule“ zur richtigen Zeit, andere Wecker bleiben
+unberührt. Heißt eine Aktion etwas anders, findet man sie über die Suche „Wecker“.
 
 ---
 
@@ -94,7 +106,7 @@ einschaltet oder neu stellt. Die Schritte zum einmaligen Einrichten des Kurzbefe
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v8';` hochzählen (`'v9'`, `'v10'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v9';` hochzählen (`'v10'`, `'v11'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
