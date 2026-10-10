@@ -2782,7 +2782,7 @@
     let nameIn;
     sheet.open('Weckzeiten', (body) => {
       const n = document.createElement('p'); n.className = 'sheet-note'; n.style.margin = '0 1rem -.5rem';
-      n.textContent = 'Am Vorabend erscheint oben neben der ersten Stunde ein Wecker-Knopf. Er sorgt dafür, dass in der Uhr-App ein Wecker zur eingestellten Zeit aktiv ist.';
+      n.textContent = 'Am Vorabend erscheint oben neben der ersten Stunde ein Wecker-Knopf. Er prüft, ob in der Uhr-App ein Wecker zur eingestellten Zeit aktiv ist – schaltet ihn bei Bedarf ein oder legt ihn neu an.';
       body.appendChild(n);
       const box = card(''); body.appendChild(box);
       DAY_NAMES.forEach((name, d) => {
@@ -2816,16 +2816,24 @@
         if (open) setTimeout(() => wrap.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'nearest' }), 120);
       });
       inner.appendChild(card(`<p class="steps-title">Einmalig auf dem iPhone einrichten</p><ol class="steps">
-        <li>App <b>Kurzbefehle</b> öffnen → <b>+</b> → oben den Namen <b class="sc-name"></b> eingeben.</li>
-        <li>Unten im Suchfeld <b>„Wecker“</b> eingeben – dort stehen alle Aktionen der Uhr-App.</li>
-        <li><b>„Wecker suchen“</b> hinzufügen → <b>Filter hinzufügen</b>: <i>Name</i> <b>ist</b> <code>Schule</code>.</li>
-        <li><b>„Wecker löschen“</b> hinzufügen (nimmt automatisch die gefundenen Wecker). Falls die Option <b>„Vor dem Löschen bestätigen“</b> angezeigt wird: ausschalten.</li>
-        <li><b>„Daten aus Eingabe abrufen“</b> hinzufügen → Eingabe: <i>Kurzbefehleingabe</i>. (Macht aus dem Text „07:00“ eine Uhrzeit.)</li>
-        <li><b>„Wecker hinzufügen“</b> (ältere Versionen: „Wecker erstellen“) → Uhrzeit: <i>Daten</i>, Name: <code>Schule</code>, nicht wiederholen.</li>
-        <li><b>„Mitteilung anzeigen“</b> → Text: <code>Wecker</code> <i>Kurzbefehleingabe</i> <code>ist aktiv ✓</code>.</li>
-        <li>Fertig. Erscheint oben ein Block <b>„Erhält … Eingabe“</b>, dort <b>Text</b> auswählen.</li>
+        <li>App <b>Kurzbefehle</b> öffnen → <b>+</b> → oben den Namen <b class="sc-name"></b> eingeben. Erscheint oben ein Block <b>„Erhält … Eingabe“</b>, dort <b>Text</b> wählen.</li>
+        <li><b>„Daten aus Eingabe abrufen“</b> → Eingabe: <i>Kurzbefehleingabe</i> (macht aus „07:00“ eine Uhrzeit).</li>
+        <li><b>„Wecker suchen“</b> ohne Filter hinzufügen (ältere Versionen: „Alle Wecker abrufen“). Alle Wecker-Aktionen findest du über die Suche <b>„Wecker“</b>.</li>
+        <li><b>„Wiederholen mit jedem Objekt“</b> → in <i>Wecker</i>. Darin:
+          <ul>
+            <li><b>„Datum formatieren“</b> → Datum: <i>Wiederholungsobjekt</i>, darauf tippen und <b>Uhrzeit</b> wählen · Format <b>Eigene</b>: <code>HH:mm</code></li>
+            <li><b>„Wenn“</b> <i>Formatiertes Datum</i> <b>ist</b> <i>Kurzbefehleingabe</i>:
+              <ul>
+                <li><b>„Wecker umschalten“</b> → Wecker: <i>Wiederholungsobjekt</i>, auf <b>Ein</b> stellen (ist er schon an, bleibt er an)</li>
+                <li><b>„Text“</b> <code>ja</code> → <b>„Variable festlegen“</b>: Name <code>gefunden</code></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>Nach <b>„Ende Wiederholen“</b>: <b>„Wenn“</b> <i>gefunden</i> <b>hat keinen Wert</b> → <b>„Wecker hinzufügen“</b> (ältere Versionen: „Wecker erstellen“): Uhrzeit <i>Daten</i>, Name <code>Schule</code>.</li>
+        <li>Zum Schluss <b>„Mitteilung anzeigen“</b>: <code>Wecker</code> <i>Kurzbefehleingabe</i> <code>ist aktiv ✓</code>.</li>
       </ol>
-      <p class="steps-note">So gibt es immer genau einen Schulwecker zur richtigen Zeit – auch wenn sich die Weckzeit ändert. Deine anderen Wecker bleiben unberührt. Beim ersten Start fragt iOS einmal, ob der Kurzbefehl auf die Uhr-App zugreifen darf. Heißt eine Aktion auf deinem iPhone etwas anders, findest du sie über die Suche „Wecker“.</p>`));
+      <p class="steps-note">Es wird nie ein Wecker gelöscht: Ein vorhandener Wecker zur Uhrzeit wird nur eingeschaltet, sonst wird einer angelegt. Beim ersten Start fragt iOS einmal nach dem Zugriff auf die Uhr-App. Heißt eine Aktion auf deinem iPhone etwas anders, hilft die Suche „Wecker“.</p>`));
       inner.firstChild.style.marginTop = '0';
       const nm = body.querySelector('.sc-name');
       const syncName = () => { nm.textContent = '„' + (nameIn.value.trim() || 'Schulwecker') + '“'; };

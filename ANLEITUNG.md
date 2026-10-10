@@ -88,17 +88,21 @@ Kurzbefehl **„Schulwecker“** und übergibt die Uhrzeit.
 
 **Kurzbefehl einmalig einrichten** (auch über den **?**-Knopf im Fenster *Weckzeiten*):
 
-1. App **Kurzbefehle** öffnen → **+** → Name `Schulwecker`.
-2. Im Suchfeld **„Wecker“** eingeben – dort stehen alle Aktionen der Uhr-App.
-3. **„Wecker suchen“** → Filter: *Name* **ist** `Schule`.
-4. **„Wecker löschen“** (nimmt die gefundenen Wecker). Falls angeboten: „Vor dem Löschen bestätigen“ ausschalten.
-5. **„Daten aus Eingabe abrufen“** → Eingabe: *Kurzbefehleingabe* (macht aus „07:00“ eine Uhrzeit).
-6. **„Wecker hinzufügen“** (ältere Versionen: „Wecker erstellen“) → Uhrzeit: *Daten*, Name `Schule`, nicht wiederholen.
-7. **„Mitteilung anzeigen“** → `Wecker` *Kurzbefehleingabe* `ist aktiv ✓`.
-8. Erscheint oben ein Block „Erhält … Eingabe“: dort **Text** wählen.
+1. App **Kurzbefehle** öffnen → **+** → Name `Schulwecker`. Erscheint oben „Erhält … Eingabe“: **Text** wählen.
+2. **„Daten aus Eingabe abrufen“** → Eingabe: *Kurzbefehleingabe* (macht aus „07:00“ eine Uhrzeit).
+3. **„Wecker suchen“** ohne Filter (ältere Versionen: „Alle Wecker abrufen“).
+4. **„Wiederholen mit jedem Objekt“** in *Wecker*, darin:
+   - **„Datum formatieren“** → *Wiederholungsobjekt* → **Uhrzeit**, Format **Eigene** `HH:mm`
+   - **„Wenn“** *Formatiertes Datum* **ist** *Kurzbefehleingabe*:
+     - **„Wecker umschalten“** → *Wiederholungsobjekt* auf **Ein**
+     - **„Text“** `ja` → **„Variable festlegen“** `gefunden`
+5. Nach „Ende Wiederholen“: **„Wenn“** *gefunden* **hat keinen Wert** →
+   **„Wecker hinzufügen“** (ältere Versionen: „Wecker erstellen“): Uhrzeit *Daten*, Name `Schule`.
+6. **„Mitteilung anzeigen“** → `Wecker` *Kurzbefehleingabe* `ist aktiv ✓`.
 
-Ergebnis: Es gibt immer genau einen Wecker „Schule“ zur richtigen Zeit, andere Wecker bleiben
-unberührt. Heißt eine Aktion etwas anders, findet man sie über die Suche „Wecker“.
+Ergebnis: Es wird **nie ein Wecker gelöscht**. Gibt es schon einen Wecker zu dieser Uhrzeit,
+wird er nur eingeschaltet (falls er aus war); sonst wird ein neuer angelegt.
+Heißt eine Aktion etwas anders, findet man sie über die Suche „Wecker“.
 
 ---
 
@@ -106,7 +110,7 @@ unberührt. Heißt eine Aktion etwas anders, findet man sie über die Suche „W
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v9';` hochzählen (`'v10'`, `'v11'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v10';` hochzählen (`'v11'`, `'v12'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
