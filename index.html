@@ -397,6 +397,43 @@
   .now-s { color: var(--label-2); font-size: .9375rem; margin-top: .25rem; font-variant-numeric: tabular-nums; }
   .now-card.quiet .now-v { font-size: 1.375rem; }
   .now-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .75rem; }
+  .now-actions { display: flex; flex-direction: column; gap: .5rem; }
+  .now-actions:not(:has(> :not([hidden]))) { display: none; }
+  .trip-btn .alarm-v { font-size: .9375rem; }
+  .row-val { color: var(--label-2); text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+  .row-val.big { color: var(--label); font-family: var(--font-display); font-size: 1.375rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .row-val.small { font-size: .875rem; }
+  .row-val.muted { color: var(--label-3); font-size: .9375rem; font-weight: 500; }
+  .buf { display: flex; align-items: center; gap: .375rem; color: var(--label-2); font-size: .9375rem; }
+  .buf input { width: 3.25rem; border: 0; outline: 0; border-radius: .5rem; background: var(--fill); padding: .375rem; text-align: center; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+  .buf input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .step-mini { width: 2rem; height: 2rem; border: 0; border-radius: 50%; background: var(--fill); color: var(--accent); font-size: 1.25rem; font-weight: 600; display: grid; place-items: center; line-height: 1; }
+  .trip-results { display: grid; gap: .625rem; }
+  .trip-status { padding: 1rem; text-align: center; color: var(--label-2); font-size: .9375rem; display: flex; gap: .5rem; align-items: center; justify-content: center; }
+  .spinner { width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid var(--fill-2); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .trip {
+    width: 100%; border: 0; text-align: left; border-radius: var(--radius); padding: .875rem 1rem;
+    background: var(--card); box-shadow: var(--shadow); display: grid; gap: .375rem; transition: transform .1s ease-out;
+  }
+  [data-theme="dark"] .sheet .trip { background: #2c2c2e; }
+  .trip:active { transform: scale(.985); }
+  .trip-top { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .trip-times { font-family: var(--font-display); font-size: 1.375rem; font-weight: 700; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+  .trip-times .arrow { color: var(--label-3); font-weight: 500; }
+  .trip-meta { color: var(--label-2); font-size: .875rem; font-variant-numeric: tabular-nums; }
+  .trip-lines { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+  .trip-lines .sep { color: var(--label-3); }
+  .line-chip { display: inline-flex; align-items: baseline; gap: .25rem; padding: .125rem .5rem; border-radius: .375rem; background: var(--mc); color: #fff; font-weight: 700; font-size: .9375rem; }
+  .line-chip small { font-size: .6875rem; font-weight: 600; opacity: .85; }
+  .trip-sub { color: var(--label-2); font-size: .8125rem; line-height: 1.4; }
+  .trip-sub .late { color: var(--danger); }
+  .trip-legs { border-top: .5px solid var(--sep); margin-top: .25rem; padding-top: .5rem; display: grid; gap: .5rem; }
+  .leg { display: grid; grid-template-columns: 3rem 1fr; gap: .5rem; font-size: .875rem; line-height: 1.4; }
+  .leg-t { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .leg-b small { color: var(--label-2); }
+  .dest-row .row-label { flex: 0 0 2rem; font-weight: 600; }
+  .dest-in { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 1rem; padding: .25rem 0; }
   .alarm-btn {
     border: 0; border-radius: 1rem; padding: .625rem .875rem; min-width: 5.25rem;
     display: flex; flex-direction: column; align-items: center; gap: .125rem;
@@ -1059,11 +1096,18 @@
     <div class="now-v" id="nowV">–</div>
     <div class="now-s" id="nowS"></div>
     </div>
+    <div class="now-actions">
+    <button class="alarm-btn trip-btn" id="tripBtn" hidden aria-label="Verbindung suchen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="6" width="14" height="12" rx="3"/><path d="M5 12.5h14M9 3h6M12 3v3M8 21l1.5-3M16 21l-1.5-3"/></svg>
+      <span class="alarm-k">Fahrt</span>
+      <span class="alarm-v" id="tripV">–</span>
+    </button>
     <button class="alarm-btn" id="alarmBtn" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M5 3.5 2.5 6M19 3.5 21.5 6"/></svg>
       <span class="alarm-k" id="alarmK">Wecker</span>
       <span class="alarm-v" id="alarmV">–</span>
     </button>
+    </div>
   </section>
 
   <section>
@@ -2745,7 +2789,7 @@
     draft: $('#draftCard'), draftPreview: $('#draftPreview'), draftImg: $('#draftImg'), draftTitle: $('#draftTitle'),
     draftStatus: $('#draftStatus'), draftProgress: $('#draftProgress'), draftBar: $('#draftBar'), draftActions: $('#draftActions'),
     now: $('#nowCard'), nowK: $('#nowK'), nowV: $('#nowV'), nowS: $('#nowS'),
-    alarmBtn: $('#alarmBtn'), alarmK: $('#alarmK'), alarmV: $('#alarmV'),
+    alarmBtn: $('#alarmBtn'), alarmK: $('#alarmK'), alarmV: $('#alarmV'), tripBtn: $('#tripBtn'), tripV: $('#tripV'),
     dayList: $('#dayList'), weekWrap: $('#weekWrap'), week: $('#weekTable'), foot: $('#planFoot'),
     file: $('#planFileInput')
   };
@@ -2845,6 +2889,238 @@
     });
   }
 
+  // ---------- Verbindungen (DVB / VVO) ----------
+  // Öffentliche Fahrplanauskunft des VVO (gleiche Daten wie die DVB-App). Adressen werden nur für die Suche übermittelt.
+  const VVO = 'https://webapi.vvo-online.de/';
+  const transit = Object.assign({
+    home: 'Voglerstraße 46, 01277 Dresden',
+    dest: {
+      0: 'Rudolf-Bergander-Ring 3, 01219 Dresden', 1: 'Rudolf-Bergander-Ring 3, 01219 Dresden',
+      2: 'Rudolf-Bergander-Ring 3, 01219 Dresden', 3: 'Rudolf-Bergander-Ring 3, 01219 Dresden',
+      4: 'Glacisstraße 2, 01099 Dresden'
+    },
+    buffer: 10, points: {}
+  }, store.get('transit', {}));
+  const saveTransit = () => store.set('transit', transit);
+  const ICON_TRAM = '<svg class="mi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="6" width="14" height="12" rx="3"/><path d="M5 12.5h14M9 3h6M12 3v3M8 21l1.5-3M16 21l-1.5-3"/><circle cx="9" cy="15.2" r=".6" fill="currentColor"/><circle cx="15" cy="15.2" r=".6" fill="currentColor"/></svg>';
+  const MOT_COLOR = { Tram: '#d6001c', Bus: '#0069b4', CityBus: '#0069b4', IntercityBus: '#0069b4', PlusBus: '#0069b4', SuburbanRailway: '#00843d', Train: '#4a4a4a', RapidTransit: '#4a4a4a', Ferry: '#0098d4', Cableway: '#7a4e9d', HailedSharedTaxi: '#d99a00' };
+  const MOT_NAME = { Tram: 'Tram', Bus: 'Bus', CityBus: 'Bus', IntercityBus: 'Bus', PlusBus: 'Bus', SuburbanRailway: 'S-Bahn', Train: 'Zug', RapidTransit: 'Zug', Ferry: 'Fähre', Cableway: 'Bahn', HailedSharedTaxi: 'Rufbus' };
+
+  const dvbTime = (s) => { const m = /\((-?\d+)/.exec(s || ''); return m ? new Date(Number(m[1])) : null; };
+  const hm = (d) => (d ? String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : '–');
+  const cleanName = (n) => { try { return /%[0-9A-F]{2}/i.test(n || '') ? decodeURIComponent(n) : (n || ''); } catch (e) { return n || ''; } };
+  function isoLocal(d) {
+    const p = (x) => String(x).padStart(2, '0');
+    const off = -d.getTimezoneOffset(), sign = off >= 0 ? '+' : '-';
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':00'
+      + sign + p(Math.floor(Math.abs(off) / 60)) + ':' + p(Math.abs(off) % 60);
+  }
+  async function vvo(path, body) {
+    const r = await fetch(VVO + path + '?format=json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('net');
+    const j = await r.json();
+    if (j.Status && j.Status.Code !== 'Ok') throw new Error('api');
+    return j;
+  }
+  async function resolvePoint(q) {
+    if (transit.points[q]) return transit.points[q];
+    const j = await vvo('tr/pointfinder', { query: q, limit: 1, stopsOnly: false, dvb: true });
+    if (!j.Points || !j.Points.length) { const e = new Error('notfound'); e.query = q; throw e; }
+    transit.points[q] = j.Points[0].split('|')[0];
+    saveTransit();
+    return transit.points[q];
+  }
+  function summarize(r) {
+    const legs = (r.PartialRoutes || []).map((p) => {
+      const st = p.RegularStops || [], a = st[0], b = st[st.length - 1], mot = p.Mot || {};
+      return {
+        type: mot.Type, line: mot.Name, dir: mot.Direction, dur: p.Duration,
+        from: a ? cleanName(a.Name) : '', to: b ? cleanName(b.Name) : '',
+        dep: a ? (dvbTime(a.DepartureRealTime) || dvbTime(a.DepartureTime)) : null,
+        depPlan: a ? dvbTime(a.DepartureTime) : null,
+        arr: b ? (dvbTime(b.ArrivalRealTime) || dvbTime(b.ArrivalTime)) : null,
+        platform: a && a.Platform ? a.Platform.Name : ''
+      };
+    });
+    const withTime = legs.filter((l) => l.dep || l.arr);
+    // Alles außer Fußwegen/Treppen zählt als Fahrt – unbekannte Verkehrsmittel werden grau angezeigt statt weggelassen
+    const rides = legs.filter((l) => l.type && l.dep && !/^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type));
+    return {
+      legs, rides, price: r.Price, dur: r.Duration,
+      dep: withTime.length ? (withTime[0].dep || withTime[0].arr) : null,
+      arr: withTime.length ? (withTime[withTime.length - 1].arr || withTime[withTime.length - 1].dep) : null,
+      changes: Math.max(0, rides.length - 1)
+    };
+  }
+  // Drei Verbindungen, die spätestens zur gewünschten Zeit ankommen – die spätesten zuerst gewählt, dann nach Abfahrt sortiert
+  async function findTrips(destQuery, arriveBy) {
+    const [from, to] = await Promise.all([resolvePoint(transit.home), resolvePoint(destQuery)]);
+    const ask = (t) => vvo('tr/trips', {
+      origin: from, destination: to, time: isoLocal(t), isarrivaltime: true, shorttermchanges: true, mobilityRestriction: 'None',
+      standardSettings: { maxChanges: 'Unlimited', walkingSpeed: 'Normal', footpathToStop: 5, includeAlternativeStops: true }
+    }).then((j) => (j.Routes || []).map(summarize));
+    const ok = (list) => list.filter((x) => x.arr && x.dep && x.arr.getTime() <= arriveBy.getTime() + 30000);
+    let found = ok(await ask(arriveBy));
+    if (found.length < 3) found = found.concat(ok(await ask(new Date(arriveBy.getTime() - 25 * 60000))));
+    const seen = new Set();
+    found = found.filter((x) => { const k = x.dep.getTime() + '|' + x.arr.getTime() + '|' + x.rides.map((r) => r.line).join(); if (seen.has(k)) return false; seen.add(k); return true; });
+    return found.sort((a, b) => b.arr - a.arr || b.dep - a.dep).slice(0, 3).sort((a, b) => a.dep - b.dep);
+  }
+
+  // Erstes Ereignis eines Tages: ganztägiger Termin oder erste Stunde mit Uhrzeit
+  function firstEvent(p, d) {
+    const note = dayNote(p, d);
+    if (note) return { text: note.text, start: note.start || '', note: true };
+    for (let i = 0; i < p.periods.length; i++) {
+      const c = cellAt(p, d, i);
+      if (c && p.periods[i].start) return { text: c.text, start: p.periods[i].start, period: i };
+    }
+    return null;
+  }
+  // Nächster Schultag, dessen erstes Ereignis noch bevorsteht
+  function nextFirstEvent(p) {
+    const now0 = new Date();
+    for (let k = 0; k <= 7; k++) {
+      const date = new Date(now0.getFullYear(), now0.getMonth(), now0.getDate() + k);
+      const d = (date.getDay() + 6) % 7;
+      if (d > 4) continue;
+      const ev = firstEvent(p, d);
+      if (!ev) continue;
+      if (k === 0) {
+        const s = toMin(ev.start), m = now0.getHours() * 60 + now0.getMinutes();
+        if (s === null || s <= m) continue;
+      }
+      return { date, d, ev, k };
+    }
+    return null;
+  }
+
+  function legChip(l) {
+    const c = MOT_COLOR[l.type] || '#6e6e73';
+    return '<span class="line-chip" style="--mc:' + c + '"><small>' + esc(MOT_NAME[l.type] || '') + '</small>' + esc(l.line || '') + '</span>';
+  }
+  function tripCard(x, isToday) {
+    const el = document.createElement('button');
+    el.className = 'trip';
+    const first = x.rides[0];
+    const late = first && first.dep && first.depPlan && first.dep - first.depPlan >= 60000 ? Math.round((first.dep - first.depPlan) / 60000) : 0;
+    const inMin = isToday ? Math.round((x.dep - Date.now()) / 60000) : null;
+    el.innerHTML = '<div class="trip-top"><span class="trip-times">' + hm(x.dep) + ' <span class="arrow">→</span> ' + hm(x.arr) + '</span>'
+      + '<span class="trip-meta">' + x.dur + ' Min. · ' + (x.changes ? x.changes + (x.changes === 1 ? ' Umstieg' : ' Umstiege') : 'direkt') + '</span></div>'
+      + '<div class="trip-lines">' + x.rides.map(legChip).join('<span class="sep">›</span>') + '</div>'
+      + '<div class="trip-sub">' + (first ? esc(first.line ? (MOT_NAME[first.type] || '') + ' ' + first.line : '') + ' ab ' + esc(first.from) + ' ' + hm(first.dep)
+        + (first.platform ? ' · Steig ' + esc(first.platform) : '') + (late ? ' <b class="late">+' + late + '</b>' : '') : '')
+        + (inMin !== null && inMin >= 0 ? ' · losgehen in ' + fmtDur(inMin) : '') + '</div>'
+      + '<div class="trip-legs" hidden>' + x.legs.filter((l) => l.dep || l.arr).map((l) =>
+        '<div class="leg"><span class="leg-t">' + hm(l.dep) + '</span><span class="leg-b">'
+        + (/^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type || '') ? '🚶 Fußweg ' + (l.dur || '') + ' Min. bis ' + esc(l.to)
+          : legChip(l) + ' Richtung ' + esc(l.dir || '') + '<br><small>' + esc(l.from) + ' → ' + esc(l.to) + ' (an ' + hm(l.arr) + ')' + (l.platform ? ' · Steig ' + esc(l.platform) : '') + '</small>')
+        + '</span></div>').join('') + '</div>';
+    el.addEventListener('click', () => { const lg = el.querySelector('.trip-legs'); lg.hidden = !lg.hidden; el.classList.toggle('open', !lg.hidden); });
+    return el;
+  }
+
+  function openTripSheet() {
+    const p = curPlan();
+    const nx = p && nextFirstEvent(p);
+    if (!nx) { toast.show('Kein bevorstehender Schultag im Stundenplan gefunden.'); return; }
+    let start = nx.ev.start, buffer = transit.buffer;
+    const dest = transit.dest[nx.d] || '';
+    let ui = {};
+    const dayLabel = (nx.k === 0 ? 'Heute' : nx.k === 1 ? 'Morgen' : DAY_NAMES[nx.d]) + ', '
+      + nx.date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
+    const arriveBy = () => { const s = toMin(start); return s === null ? null : new Date(nx.date.getFullYear(), nx.date.getMonth(), nx.date.getDate(), 0, s - buffer); };
+    const paint = () => {
+      const a = arriveBy();
+      ui.arr.textContent = a ? hm(a) : 'Beginn eintragen';
+      ui.arr.classList.toggle('muted', !a);
+      ui.buf.value = buffer;
+      ui.go.disabled = !a || !dest;
+    };
+    async function search() {
+      const a = arriveBy();
+      if (!a || !dest) return false;
+      transit.buffer = buffer; saveTransit();
+      // Beginn eines ganztägigen Termins merken, wenn er noch fehlte
+      if (nx.ev.note && !dayNote(p, nx.d).start) { p.dayNotes[nx.d].start = start; p.at = now(); saveBook(); renderPlan(); }
+      ui.res.innerHTML = '<div class="trip-status"><span class="spinner"></span> Verbindungen werden gesucht …</div>';
+      try {
+        const list = await findTrips(dest, a);
+        ui.res.innerHTML = '';
+        if (!list.length) { ui.res.innerHTML = '<div class="trip-status">Keine passende Verbindung gefunden. Versuch es mit mehr Minuten Puffer.</div>'; return false; }
+        const h = document.createElement('h4'); h.className = 'section-title'; h.style.margin = '.25rem 0 -.25rem 1rem';
+        h.textContent = 'Ankunft bis ' + hm(a) + ' · Ziel ' + dest.split(',')[0];
+        ui.res.appendChild(h);
+        list.forEach((x) => ui.res.appendChild(tripCard(x, nx.k === 0)));
+        const src = document.createElement('p'); src.className = 'sheet-note'; src.style.margin = '0 1rem';
+        src.textContent = 'Fahrplandaten: VVO/DVB, inkl. Echtzeit, sofern verfügbar. Antippen zeigt alle Umstiege.';
+        ui.res.appendChild(src);
+        haptic(8);
+        setTimeout(() => ui.res.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' }), 60);
+      } catch (e) {
+        ui.res.innerHTML = '<div class="trip-status">' + (e.message === 'notfound'
+          ? 'Adresse nicht gefunden: „' + esc(e.query) + '“. Bitte unter „Adressen ändern“ prüfen.'
+          : 'Keine Verbindung zur DVB-Auskunft. Bitte Internetverbindung prüfen.') + '</div>';
+      }
+      return false;   // Fenster bleibt offen
+    }
+    sheet.open('Verbindung', (body) => {
+      const n = document.createElement('p'); n.className = 'sheet-note'; n.style.margin = '0 1rem -.5rem'; n.textContent = dayLabel; body.appendChild(n);
+      const c = card(`
+        <div class="row"><span class="row-label">Erstes Event</span><span class="row-val" id="tvEv"></span></div>
+        <div class="row"><span class="row-label">Beginn</span><input type="time" class="alarm-time" id="tvStart" aria-label="Beginn des ersten Events"></div>
+        <div class="row"><span class="row-label">Ankommen</span>
+          <div class="buf"><button class="step-mini press" id="tvMinus" aria-label="5 Minuten weniger">−</button>
+          <input type="number" inputmode="numeric" min="0" max="120" id="tvBuf" aria-label="Minuten vor Beginn"><span>Min. vorher</span>
+          <button class="step-mini press" id="tvPlus" aria-label="5 Minuten mehr">+</button></div></div>
+        <div class="row"><span class="row-label">Ankunft spätestens</span><b class="row-val big" id="tvArr">–</b></div>
+        <div class="row"><span class="row-label">Ziel</span><span class="row-val small" id="tvDest"></span></div>`);
+      body.appendChild(c);
+      c.querySelector('#tvEv').textContent = nx.ev.text;
+      c.querySelector('#tvDest').textContent = dest || 'kein Ziel eingetragen';
+      const sIn = c.querySelector('#tvStart'); sIn.value = start;
+      ui = { arr: c.querySelector('#tvArr'), buf: c.querySelector('#tvBuf') };
+      sIn.addEventListener('input', () => { start = sIn.value; paint(); });
+      ui.buf.addEventListener('input', () => { const v = parseInt(ui.buf.value, 10); buffer = clamp(isNaN(v) ? 0 : v, 0, 120); paint(); ui.buf.value = ui.buf.value; });
+      c.querySelector('#tvMinus').addEventListener('click', () => { buffer = clamp(buffer - 5, 0, 120); paint(); });
+      c.querySelector('#tvPlus').addEventListener('click', () => { buffer = clamp(buffer + 5, 0, 120); paint(); });
+      ui.go = document.createElement('button'); ui.go.className = 'btn primary press'; ui.go.textContent = 'Verbindungen suchen';
+      ui.go.addEventListener('click', search);
+      body.appendChild(ui.go);
+      ui.res = document.createElement('div'); ui.res.className = 'trip-results'; body.appendChild(ui.res);
+      const ch = document.createElement('button'); ch.className = 'link-btn'; ch.style.justifySelf = 'center';
+      ch.textContent = 'Adressen ändern'; ch.addEventListener('click', () => { sheet.close(); setTimeout(openTransitSheet, 380); });
+      body.appendChild(ch);
+      paint();
+    }, search, 'Suchen');
+  }
+
+  function openTransitSheet() {
+    let homeIn, destIns = [];
+    sheet.open('Verbindungen (DVB)', (body) => {
+      const n = document.createElement('p'); n.className = 'sheet-note'; n.style.margin = '0 1rem -.5rem';
+      n.textContent = 'Für die Suche werden Start und Ziel an die Fahrplanauskunft des VVO übermittelt – sonst nichts.';
+      body.appendChild(n);
+      const t1 = document.createElement('h4'); t1.className = 'section-title'; t1.textContent = 'Start'; body.appendChild(t1);
+      body.appendChild(card('<input class="sheet-input" id="trHome" autocomplete="off" placeholder="Straße Nr, PLZ Ort">'));
+      homeIn = body.querySelector('#trHome'); homeIn.value = transit.home;
+      const t2 = document.createElement('h4'); t2.className = 'section-title'; t2.textContent = 'Ziel je Wochentag'; body.appendChild(t2);
+      const box = card(''); body.appendChild(box);
+      DAY_NAMES.forEach((name, d) => {
+        const r = document.createElement('div'); r.className = 'row dest-row';
+        r.innerHTML = '<span class="row-label"></span><input class="dest-in" autocomplete="off" placeholder="Adresse oder Haltestelle">';
+        r.querySelector('.row-label').textContent = name.slice(0, 2);
+        const inp = r.querySelector('input'); inp.value = transit.dest[d] || ''; inp.setAttribute('aria-label', 'Ziel ' + name);
+        destIns[d] = inp; box.appendChild(r);
+      });
+    }, () => {
+      transit.home = homeIn.value.trim();
+      destIns.forEach((inp, d) => { transit.dest[d] = inp.value.trim(); });
+      saveTransit(); renderPlan();
+      toast.show('Adressen gespeichert');
+    });
+  }
+
   // Was läuft gerade, was kommt als Nächstes?
   function nowInfo(p, date = new Date()) {
     const d = (date.getDay() + 6) % 7, m = date.getHours() * 60 + date.getMinutes();
@@ -2890,6 +3166,10 @@
     const info = nowInfo(p);
     const t = todayIdx();
     pl.now.classList.toggle('quiet', info.kind === 'empty');
+    // Fahrt-Knopf: erstes Event des nächsten Schultags
+    const nfe = nextFirstEvent(p);
+    pl.tripBtn.hidden = !nfe;
+    if (nfe) pl.tripV.textContent = nfe.k === 0 ? 'heute' : nfe.k === 1 ? 'morgen' : DAY_NAMES[nfe.d].slice(0, 2);
     const alarmDay = info.kind === 'later' && info.tomorrow ? info.d : null;
     pl.alarmBtn.hidden = alarmDay === null;
     if (alarmDay !== null) {
@@ -3023,6 +3303,7 @@
       pl.week.innerHTML = html + '</tbody>';
     }
   }
+  pl.tripBtn.addEventListener('click', openTripSheet);
   pl.alarmBtn.addEventListener('click', () => {
     const tm = pl.alarmBtn.dataset.time;
     if (tm) runAlarmShortcut(tm); else openAlarmSheet();
@@ -3262,7 +3543,8 @@
       { label: 'Neuer Stundenplan', icon: ICON_PLUS, keepFocus: true, onSelect: () => openNewPlanSheet(p) },
       { label: 'Aus Foto oder Datei laden', icon: ICON_DOWN, keepFocus: true, onSelect: () => pl.file.click() });
     if (p) list.push({ label: 'Zeiten bearbeiten', icon: ICON_EDIT, keepFocus: true, onSelect: () => openPlanSheet(p) });
-    list.push({ label: 'Weckzeiten', icon: ICON_ALARM, keepFocus: true, onSelect: openAlarmSheet });
+    list.push({ label: 'Weckzeiten', icon: ICON_ALARM, keepFocus: true, onSelect: openAlarmSheet },
+      { label: 'Verbindungen (DVB)', icon: ICON_TRAM, keepFocus: true, onSelect: openTransitSheet });
     return list;
   });
 
