@@ -443,7 +443,17 @@
   .trip-sub { color: var(--label-2); font-size: .8125rem; line-height: 1.4; }
   .trip-sub .late, .trip-meta .late { color: var(--danger); }
   .trip-legs { border-top: .5px solid var(--sep); margin-top: .25rem; padding-top: .5rem; display: grid; gap: .5rem; }
-  .leg { display: grid; grid-template-columns: 3rem 1fr; gap: .5rem; font-size: .875rem; line-height: 1.4; }
+  .leg { display: grid; grid-template-columns: 3rem 1fr; gap: .5rem; font-size: .875rem; line-height: 1.4; position: relative; }
+  .leg.ride-end { margin-top: -.25rem; }
+  .leg .dir { font-weight: 500; }
+  .leg.walk .leg-b { color: var(--label-2); }
+  .leg.xfer .leg-b {
+    display: flex; flex-direction: column; gap: .0625rem; padding: .375rem .625rem; border-radius: .625rem;
+    background: var(--fill); border-left: 3px solid var(--label-3);
+  }
+  .leg.xfer .xfer-k { font-weight: 600; }
+  .leg.xfer.short .leg-b { background: color-mix(in srgb, var(--danger) 14%, transparent); border-left-color: var(--danger); }
+  .leg.xfer.short .xfer-k { color: var(--danger); }
   .leg-t { font-weight: 600; font-variant-numeric: tabular-nums; }
   .leg-b small { color: var(--label-2); }
   .dest-row .row-label { flex: 0 0 2rem; font-weight: 600; }
@@ -2953,14 +2963,24 @@
         dep: a ? (dvbTime(a.DepartureRealTime) || dvbTime(a.DepartureTime)) : null,
         depPlan: a ? dvbTime(a.DepartureTime) : null,
         arr: b ? (dvbTime(b.ArrivalRealTime) || dvbTime(b.ArrivalTime)) : null,
-        platform: a && a.Platform ? a.Platform.Name : ''
+        platform: a && a.Platform ? a.Platform.Name : '',
+        arrPlatform: b && b.Platform ? b.Platform.Name : ''
       };
     });
     const withTime = legs.filter((l) => l.dep || l.arr);
     // Alles außer Fußwegen/Treppen zählt als Fahrt – unbekannte Verkehrsmittel werden grau angezeigt statt weggelassen
     const rides = legs.filter((l) => l.type && l.dep && !/^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type));
+    // Umstiege: Zeit zwischen Ankunft einer Fahrt und Abfahrt der nächsten (inkl. Fußweg dazwischen)
+    const transfers = [];
+    for (let k = 1; k < rides.length; k++) {
+      const a = rides[k - 1], b = rides[k];
+      const ia = legs.indexOf(a), ib = legs.indexOf(b);
+      const walk = legs.slice(ia + 1, ib).reduce((sum, l) => sum + (l.dur || 0), 0);
+      const min = a.arr && b.dep ? Math.round((b.dep - a.arr) / 60000) : null;
+      transfers.push({ at: a.to, to: b.from, fromPl: a.arrPlatform, toPl: b.platform, min, walk, short: min !== null && min < 5 });
+    }
     return {
-      legs, rides, price: r.Price, dur: r.Duration,
+      legs, rides, transfers, price: r.Price, dur: r.Duration,
       dep: withTime.length ? (withTime[0].dep || withTime[0].arr) : null,
       arr: withTime.length ? (withTime[withTime.length - 1].arr || withTime[withTime.length - 1].dep) : null,
       changes: Math.max(0, rides.length - 1)
@@ -3034,6 +3054,35 @@
     return '<span class="line-chip" style="--mc:' + c + '"><small>' + esc(MOT_NAME[l.type] || '') + '</small>' + esc(l.line || '') + '</span>';
   }
   // Ampel: knapp = nach Wunsch-Ankunft, aber vor Beginn · zu spät = nach Beginn der ersten Stunde
+  const isWalk = (l) => /^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type || '');
+  const steig = (n) => (n ? ' · Steig ' + esc(n) : '');
+  function legsHtml(x) {
+    const rows = [];
+    const row = (t, body, cls = '') => rows.push('<div class="leg ' + cls + '"><span class="leg-t">' + t + '</span><span class="leg-b">' + body + '</span></div>');
+    const firstRide = x.legs.indexOf(x.rides[0]), lastRide = x.legs.indexOf(x.rides[x.rides.length - 1]);
+    // Weg zur ersten Haltestelle
+    const before = x.legs.slice(0, firstRide).filter(isWalk);
+    if (before.length) row(hm(before[0].dep), '🚶 ' + before.reduce((s0, l) => s0 + (l.dur || 0), 0) + ' Min. Fußweg zu ' + esc(x.rides[0] ? x.rides[0].from : before[before.length - 1].to), 'walk');
+    x.rides.forEach((r, k) => {
+      row(hm(r.dep), legChip(r) + ' <span class="dir">Richtung ' + esc(r.dir || '') + '</span><br><small>ab ' + esc(r.from) + steig(r.platform) + '</small>', 'ride');
+      row(hm(r.arr), '<small>an ' + esc(r.to) + steig(r.arrPlatform) + '</small>', 'ride-end');
+      const t = x.transfers[k];
+      if (t) {
+        const same = t.at === t.to;
+        const where = same
+          ? (t.fromPl && t.toPl ? (t.fromPl === t.toPl ? 'am selben Steig ' + esc(t.fromPl) : 'von Steig ' + esc(t.fromPl) + ' zu Steig ' + esc(t.toPl)) : 'in ' + esc(t.at))
+          : esc(t.at) + steig(t.fromPl) + ' → ' + esc(t.to) + steig(t.toPl);
+        row('', '<span class="xfer-k">' + (t.short ? '⚠︎ ' : '') + 'Umstieg ' + (t.min !== null ? t.min + ' Min.' : '') + '</span>'
+          + '<small>' + where + (t.walk ? ' · ' + t.walk + ' Min. Fußweg' : '') + '</small>', 'xfer' + (t.short ? ' short' : ''));
+      }
+    });
+    // Weg vom Ziel-Halt
+    const after = x.legs.slice(lastRide + 1).filter(isWalk);
+    if (after.length) row(hm(after[after.length - 1].arr), '🚶 ' + after.reduce((s0, l) => s0 + (l.dur || 0), 0) + ' Min. Fußweg zum Ziel', 'walk');
+    if (!x.rides.length) row(hm(x.dep), '🚶 nur Fußweg (' + x.dur + ' Min.)', 'walk');
+    return rows.join('');
+  }
+
   function tripCard(x, isToday, arriveBy, startAt) {
     const el = document.createElement('button');
     const afterStart = startAt && x.arr.getTime() > startAt.getTime();
@@ -3048,12 +3097,9 @@
       + '<div class="trip-lines">' + x.rides.map(legChip).join('<span class="sep">›</span>') + '</div>'
       + '<div class="trip-sub">' + (first ? esc(first.line ? (MOT_NAME[first.type] || '') + ' ' + first.line : '') + ' ab ' + esc(first.from) + ' ' + hm(first.dep)
         + (first.platform ? ' · Steig ' + esc(first.platform) : '') + (late ? ' <b class="late">+' + late + '</b>' : '') : '')
-        + (inMin !== null && inMin >= 0 ? ' · losgehen in ' + fmtDur(inMin) : '') + '</div>'
-      + '<div class="trip-legs" hidden>' + x.legs.filter((l) => l.dep || l.arr).map((l) =>
-        '<div class="leg"><span class="leg-t">' + hm(l.dep) + '</span><span class="leg-b">'
-        + (/^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type || '') ? '🚶 Fußweg ' + (l.dur || '') + ' Min. bis ' + esc(l.to)
-          : legChip(l) + ' Richtung ' + esc(l.dir || '') + '<br><small>' + esc(l.from) + ' → ' + esc(l.to) + ' (an ' + hm(l.arr) + ')' + (l.platform ? ' · Steig ' + esc(l.platform) : '') + '</small>')
-        + '</span></div>').join('') + '</div>';
+        + (inMin !== null && inMin >= 0 ? ' · losgehen in ' + fmtDur(inMin) : '')
+        + (x.transfers.some((t) => t.short) ? ' · <b class="late">knapper Umstieg (' + Math.min(...x.transfers.filter((t) => t.short).map((t) => t.min)) + ' Min.)</b>' : '') + '</div>'
+      + '<div class="trip-legs" hidden>' + legsHtml(x) + '</div>';
     el.addEventListener('click', () => { const lg = el.querySelector('.trip-legs'); lg.hidden = !lg.hidden; el.classList.toggle('open', !lg.hidden); });
     return el;
   }
