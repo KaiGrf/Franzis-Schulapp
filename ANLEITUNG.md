@@ -129,9 +129,12 @@ Für die Suche werden nur diese Adressen an die Fahrplanauskunft des VVO übermi
 Reiter **Bahn** in der Tab-Leiste:
 
 - **Verbindung:** Richtung wählen (Dresden → Leipzig oder umgekehrt), in Leipzig **Johannisplatz 20**
-  oder **Hbf**, in Dresden immer **Voglerstraße 46**. Richtung Leipzig geht es immer über **Dresden Hbf**. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot),
-  Karte und **↑ Früher / ↓ Später**. Mit Deutschlandticket ist alles außer ICE/IC enthalten –
-  das zeigt jede Verbindung an.
+  oder **Hbf**, in Dresden immer **Voglerstraße 46**. Richtung Leipzig geht es immer über **Dresden Hbf**.
+  Gesucht werden **nur Verbindungen im Deutschlandticket** (Regionalzüge, S-Bahn, Tram, Bus) – ICE/IC
+  stehen im Bereich oben. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot), Karte und **↑ Früher / ↓ Später**.
+- **Entspannt umsteigen:** Der Schalter sorgt für mindestens 5 Minuten bei jedem Umstieg (notfalls eine
+  Tram früher). Bei einer Verbindung mit knappem Umstieg lädt **„Entspannter umsteigen – früher los“**
+  gezielt die Variante mit demselben Zug und mehr Puffer.
 - **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden Hbf und
   Leipzig Hbf in beide Richtungen. Preise kann die App nicht selbst abfragen (die Bahn bietet dafür keine
   offene Schnittstelle). Deshalb:
@@ -149,7 +152,7 @@ Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v18';` hochzählen (`'v19'`, `'v20'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v19';` hochzählen (`'v20'`, `'v21'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.

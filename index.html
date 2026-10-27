@@ -543,6 +543,14 @@
   .dt-tag { font-size: .6875rem; font-weight: 700; padding: 0 .375rem; border-radius: 99px; vertical-align: middle; }
   .dt-tag.ok { color: #1f9d48; background: color-mix(in srgb, #34c759 16%, transparent); }
   .dt-tag.need { color: #c76a00; background: color-mix(in srgb, #ff9500 18%, transparent); }
+  .relax-btn {
+    justify-self: start; border: 0; border-radius: 999px; padding: .4375rem .875rem; font-size: .875rem; font-weight: 600;
+    background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); display: inline-flex; align-items: center; gap: .5rem;
+  }
+  .relax-btn:disabled { color: var(--label-2); background: var(--fill); }
+  .trip.relaxed { box-shadow: inset 4px 0 0 #34c759, var(--shadow); }
+  .relaxed-tag { font-size: .8125rem; font-weight: 700; color: #1f9d48; }
+  [data-theme="dark"] .relaxed-tag { color: #4cd964; }
   .day-head { margin: .5rem 0 -.25rem 1rem; font-size: .8125rem; font-weight: 600; color: var(--label-2); }
   .when-in { border: 0; outline: 0; border-radius: .5rem; background: var(--fill); padding: .375rem .5rem; font-size: .9375rem; font-variant-numeric: tabular-nums; min-width: 0; }
   #viewTrain .segmented:not(.small) button { font-size: .8125rem; }
@@ -1291,9 +1299,13 @@
         <input type="datetime-local" id="trWhen" class="when-in">
         <button class="link-btn" id="trNow">Jetzt</button>
       </div>
+      <div class="row">
+        <label class="row-label" for="trRelax">Entspannt umsteigen<small>Mindestens 5 Min. – notfalls eine Tram früher</small></label>
+        <label class="switch"><input type="checkbox" id="trRelax" role="switch"><span></span></label>
+      </div>
       <div class="ed-actions"><button class="btn primary press" id="trGo">Verbindungen suchen</button></div>
     </div>
-    <p class="section-foot">Mit Deutschlandticket: Regionalzüge, S-Bahn, Tram und Bus sind enthalten – nur für ICE/IC ist eine Fahrkarte nötig.</p>
+    <p class="section-foot">Gesucht werden nur Verbindungen im Deutschlandticket (Regionalzüge, S-Bahn, Tram, Bus). ICE/IC stehen oben unter „ICE/IC · nächste 10 Tage“.</p>
   </section>
 
   <section class="trip-results" id="trRes"></section>
@@ -3398,7 +3410,7 @@
       + '<div class="trip-legs" hidden>' + legsHtml(x) + '</div>';
     const toggle = () => { const lg = el.querySelector('.trip-legs'); lg.hidden = !lg.hidden; el.classList.toggle('open', !lg.hidden); el.setAttribute('aria-expanded', !lg.hidden); };
     el.addEventListener('click', (e) => {
-      if (e.target.closest('.pin, .price-btn')) return;           // Links öffnen sich selbst
+      if (e.target.closest('.pin, .price-btn, .relax-btn')) return;   // eigene Knöpfe/Links
       if (e.target.closest('.map-btn')) { openMap(x); return; }
       toggle();
     });
@@ -4360,6 +4372,8 @@
   const localInput = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
   tr.when.value = localInput(new Date());
   $('#trNow').addEventListener('click', () => { tr.when.value = localInput(new Date()); });
+  $('#trRelax').checked = !!train.relaxed;
+  $('#trRelax').addEventListener('change', (e) => { train.relaxed = e.target.checked; saveTrain(); });
 
   function endpoints() {
     const L = PLACES[train.lpz], D = PLACES.dresden;
@@ -4372,12 +4386,23 @@
     renderFvSummary();
   }
 
+  // Verkehrsmittel im Deutschlandticket (kein ICE/IC, kein Fernbus)
+  const DT_MODES = 'TRAM,BUS,SUBWAY,METRO,SUBURBAN,REGIONAL_RAIL,REGIONAL_FAST_RAIL,FERRY';
+  const RELAX_MIN = 5;
   let trShown = [], trCursor = { prev: null, next: null }, trLabels = null;
-  async function trainSearch(cursorDir) {
+  function baseParams() {
     const { from, to } = endpoints();
-    const params = { fromPlace: from.place, toPlace: to.place, numItineraries: '5' };
+    const params = { fromPlace: from.place, toPlace: to.place, transitModes: DT_MODES };
     // Dresden → Leipzig immer über Dresden Hbf (nicht über Dresden-Neustadt)
     if (train.dir === 'DL') params.via = HBF.dresden;
+    if (train.relaxed) params.minTransferTime = String(RELAX_MIN);
+    return params;
+  }
+  const viaHbf = (x) => train.dir !== 'DL' || x.rides.some((r) => /RAIL/.test(r.type) && /^Dresden Hbf/.test(r.from)) || !x.rides.some((r) => /RAIL/.test(r.type));
+  const usable = (x) => !x.coach && x.dep && x.arr && !x.rides.some((r) => r.fern) && viaHbf(x);
+  async function trainSearch(cursorDir) {
+    const { from, to } = endpoints();
+    const params = Object.assign(baseParams(), { numItineraries: '5' });
     if (cursorDir) params.pageCursor = trCursor[cursorDir];
     else {
       const t = tr.when.value ? new Date(tr.when.value) : new Date();
@@ -4386,8 +4411,7 @@
       tr.res.innerHTML = '<div class="trip-status"><span class="spinner"></span> Verbindungen werden gesucht …</div>';
     }
     const j = await motis('plan', params);
-    const viaHbf = (x) => train.dir !== 'DL' || x.rides.some((r) => r.fern || /RAIL/.test(r.type) ? /^Dresden Hbf/.test(r.from) : false) || !x.rides.some((r) => /RAIL|LONG_DISTANCE/.test(r.type));
-    const got = (j.itineraries || []).map((it) => fromMotis(it, trLabels.from, trLabels.to)).filter((x) => !x.coach && x.dep && x.arr && viaHbf(x));
+    const got = (j.itineraries || []).map((it) => fromMotis(it, trLabels.from, trLabels.to)).filter(usable);
     if (!cursorDir || cursorDir === 'prev') trCursor.prev = j.previousPageCursor || trCursor.prev;
     if (!cursorDir || cursorDir === 'next') trCursor.next = j.nextPageCursor || trCursor.next;
     const seen = new Set(trShown.map(tripKey));
@@ -4395,6 +4419,29 @@
     trShown = trShown.concat(add).sort((a, b) => a.dep - b.dep);
     return add;
   }
+  const mainRide = (x) => x.rides.filter((r) => /RAIL/.test(r.type)).sort((a, b) => (b.arr - b.dep) - (a.arr - a.dep))[0] || x.rides[0];
+  async function relaxedFor(x) {
+    const m = mainRide(x);
+    // zwei Blickwinkel: rückwärts ab der Ankunft und vorwärts ab 40 Min. vor der ursprünglichen Abfahrt
+    const relaxP = { minTransferTime: String(RELAX_MIN) };
+    const [jb, jf] = await Promise.all([
+      motis('plan', Object.assign(baseParams(), relaxP, { arriveBy: 'true', time: new Date(x.arr.getTime() + 60000).toISOString(), numItineraries: '6' })),
+      motis('plan', Object.assign(baseParams(), relaxP, { time: new Date(x.dep.getTime() - 40 * 60000).toISOString(), searchWindow: '2700', numItineraries: '10' }))
+    ]);
+    const cands = [].concat(jb.itineraries || [], jf.itineraries || []).map((it) => fromMotis(it, trLabels.from, trLabels.to)).filter(usable)
+      .filter((y) => !y.transfers.some((t) => t.short) && y.arr <= new Date(x.arr.getTime() + 60000));
+    // 1. dieselben Linien, nur früher los („eine Tram früher“) · 2. derselbe Hauptzug · 3. späteste entspannte Alternative
+    const lines = (z) => z.rides.map((r) => r.line).join('>');
+    const sameTrain = cands.filter((y) => { const n = mainRide(y); return n && m && n.line === m.line && Math.abs(n.dep - m.dep) < 60000; });
+    const sameLines = sameTrain.filter((y) => lines(y) === lines(x) && y.dep < x.dep);
+    const pick = sameLines.length ? sameLines : sameTrain.length ? sameTrain : cands;
+    return pick.sort((a, b) => b.dep - a.dep)[0] || null;
+  }
+  function relaxHtml(x) {
+    if (train.relaxed || x.relaxed || x.hasRelaxed || !x.transfers.some((t) => t.short)) return '';
+    return '<button class="relax-btn press">Entspannter umsteigen – früher los ↓</button>';
+  }
+
   function renderTrainResults(focusKey) {
     tr.res.innerHTML = '';
     if (!trShown.length) { tr.res.innerHTML = '<div class="trip-status">Keine Verbindung gefunden.</div>'; return; }
@@ -4422,8 +4469,24 @@
         dh.textContent = x.dep.toDateString() === today ? 'Heute' : x.dep.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
         tr.res.appendChild(dh);
       }
-      x.extraHtml = dticketHtml(x);
+      x.extraHtml = (x.relaxed ? '<div class="relaxed-tag">Entspannte Variante · ' + x.relaxed + '</div>' : '') + dticketHtml(x) + relaxHtml(x);
       const c = tripCard(x, x.dep.toDateString() === today, null, null);
+      if (x.relaxed) c.classList.add('relaxed');
+      const rb = c.querySelector('.relax-btn');
+      if (rb) rb.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        rb.disabled = true; rb.innerHTML = '<span class="spinner"></span> Suche entspanntere Variante …';
+        try {
+          const y = await relaxedFor(x);
+          if (!y) { rb.textContent = 'Keine entspanntere Variante gefunden'; return; }
+          if (trShown.some((z) => tripKey(z) === tripKey(y))) { rb.textContent = 'Entspannte Variante steht schon in der Liste'; return; }
+          const earlier = Math.round((x.dep - y.dep) / 60000);
+          y.relaxed = earlier > 0 ? earlier + ' Min. früher los, gleiche Ankunft' : 'Umstiege mit mehr Puffer';
+          x.hasRelaxed = true;
+          trShown.push(y); trShown.sort((a, b) => a.dep - b.dep);
+          renderTrainResults(tripKey(y));
+        } catch (err) { rb.disabled = false; rb.textContent = 'Keine Verbindung – nochmal versuchen'; }
+      });
       if (focusKey && tripKey(x) === focusKey) { focusEl = c; c.classList.add('new'); }
       tr.res.appendChild(c);
     });
