@@ -370,7 +370,7 @@
     -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
     border-top: .5px solid var(--sep);
   }
-  .tabbar-inner { max-width: 36rem; margin: 0 auto; height: var(--tabbar-h); display: grid; grid-template-columns: 1fr 1fr; }
+  .tabbar-inner { max-width: 36rem; margin: 0 auto; height: var(--tabbar-h); display: grid; grid-template-columns: repeat(3, 1fr); }
   .tab {
     border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .125rem;
     color: var(--label-2); font-size: .625rem; font-weight: 600; letter-spacing: .01em;
@@ -502,6 +502,38 @@
   .mk.dest { background: #ff3b30; }
   .leaflet-popup-content { font-family: var(--font); font-size: .875rem; line-height: 1.45; }
   .leaflet-popup-content .line-chip { font-size: .8125rem; }
+  /* Bahn */
+  .fv-ico { flex: none; font-size: .6875rem; font-weight: 800; color: #fff; background: #ec0016; border-radius: .375rem; padding: .125rem .375rem; letter-spacing: .02em; }
+  .fv-seg { margin: 0 1rem .5rem; }
+  .fv-seg button { font-size: .75rem; padding: .3125rem .25rem; }
+  .fv-list { padding: 0 1rem 1rem; max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .fv-day { position: sticky; top: 0; z-index: 1; background: var(--card); padding: .625rem 0 .25rem; font-size: .8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--label-2); }
+  .fv-row { display: flex; align-items: center; gap: .625rem; padding: .5rem 0; border-top: .5px solid var(--sep); }
+  .fv-dir { flex: none; width: 3.25rem; font-size: .75rem; font-weight: 700; color: var(--label-2); font-variant-numeric: tabular-nums; }
+  .fv-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .125rem .375rem; font-variant-numeric: tabular-nums; }
+  .fv-main small { flex-basis: 100%; color: var(--label-2); font-size: .75rem; }
+  .fv-main .line-chip { font-size: .75rem; }
+  .fv-note { margin: .75rem 0 0; font-size: .8125rem; line-height: 1.45; color: var(--label-2); }
+  .price-btn {
+    display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 999px;
+    padding: .4375rem .875rem; background: color-mix(in srgb, #ec0016 12%, transparent); color: #ec0016; font-weight: 600; font-size: .875rem;
+  }
+  [data-theme="dark"] .price-btn { color: #ff5a6a; background: color-mix(in srgb, #ff5a6a 16%, transparent); }
+  .price-btn.small { flex: none; padding: .3125rem .625rem; font-size: .8125rem; }
+  .trip .price-btn { justify-self: start; }
+  .dt-line { display: flex; flex-wrap: wrap; gap: .375rem; }
+  .dt { font-size: .75rem; font-weight: 700; padding: .125rem .5rem; border-radius: 99px; }
+  .dt.ok { background: color-mix(in srgb, #34c759 18%, transparent); color: #1f9d48; }
+  .dt.need { background: color-mix(in srgb, #ff9500 20%, transparent); color: #c76a00; }
+  [data-theme="dark"] .dt.ok { color: #4cd964; }
+  [data-theme="dark"] .dt.need { color: #ffb340; }
+  .dt.small { font-weight: 600; }
+  .dt-tag { font-size: .6875rem; font-weight: 700; padding: 0 .375rem; border-radius: 99px; vertical-align: middle; }
+  .dt-tag.ok { color: #1f9d48; background: color-mix(in srgb, #34c759 16%, transparent); }
+  .dt-tag.need { color: #c76a00; background: color-mix(in srgb, #ff9500 18%, transparent); }
+  .day-head { margin: .5rem 0 -.25rem 1rem; font-size: .8125rem; font-weight: 600; color: var(--label-2); }
+  .when-in { border: 0; outline: 0; border-radius: .5rem; background: var(--fill); padding: .375rem .5rem; font-size: .9375rem; font-variant-numeric: tabular-nums; min-width: 0; }
+  #viewTrain .segmented:not(.small) button { font-size: .8125rem; }
   .dest-row .row-label { flex: 0 0 2rem; font-weight: 600; }
   .dest-in { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 1rem; padding: .25rem 0; }
   .alarm-btn {
@@ -1197,12 +1229,70 @@
   </section>
 </main>
 
+<!-- ===================== Bahn ===================== -->
+<main id="viewTrain" class="view" hidden>
+  <!-- ICE/IC der nächsten 10 Tage -->
+  <section class="card">
+    <button class="disclosure" id="fvToggle" aria-expanded="false" aria-controls="fvWrap">
+      <span class="fv-ico">ICE</span>
+      <span class="row-label">ICE/IC · nächste 10 Tage</span>
+      <span class="disc-sum" id="fvSum"></span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+    </button>
+    <div class="collapse" id="fvWrap"><div>
+      <div class="segmented small fv-seg" id="fvSeg" role="radiogroup" aria-label="Richtung">
+        <div class="seg-indicator"></div>
+        <button role="radio" data-v="both">Beide</button>
+        <button role="radio" data-v="DL" aria-label="Dresden nach Leipzig">DD → L</button>
+        <button role="radio" data-v="LD" aria-label="Leipzig nach Dresden">L → DD</button>
+      </div>
+      <div class="fv-list" id="fvList"></div>
+    </div></div>
+  </section>
+
+  <!-- Verbindungssuche -->
+  <section>
+    <h2 class="section-title">Verbindung</h2>
+    <div class="card">
+      <div class="segmented" id="dirSeg" role="radiogroup" aria-label="Richtung">
+        <div class="seg-indicator"></div>
+        <button role="radio" data-v="DL">Dresden → Leipzig</button>
+        <button role="radio" data-v="LD">Leipzig → Dresden</button>
+      </div>
+      <div class="row">
+        <span class="row-label" id="lpzLabel">Ziel in Leipzig</span>
+        <div class="segmented small" id="lpzSeg" role="radiogroup" aria-label="Ort in Leipzig">
+          <div class="seg-indicator"></div>
+          <button role="radio" data-v="jp">Johannisplatz 20</button>
+          <button role="radio" data-v="hbf">Hbf</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="row-label">In Dresden</span><span class="row-val">Voglerstraße 46</span>
+      </div>
+      <div class="row">
+        <label class="row-label" for="trWhen">Abfahrt</label>
+        <input type="datetime-local" id="trWhen" class="when-in">
+        <button class="link-btn" id="trNow">Jetzt</button>
+      </div>
+      <div class="ed-actions"><button class="btn primary press" id="trGo">Verbindungen suchen</button></div>
+    </div>
+    <p class="section-foot">Mit Deutschlandticket: Regionalzüge, S-Bahn, Tram und Bus sind enthalten – nur für ICE/IC ist eine Fahrkarte nötig.</p>
+  </section>
+
+  <section class="trip-results" id="trRes"></section>
+</main>
+
 <!-- Tab-Leiste -->
 <nav class="tabbar" id="tabbar" aria-label="Bereiche">
   <div class="tabbar-inner" role="tablist">
     <button class="tab" role="tab" data-view="plan" id="tabPlan" aria-controls="viewPlan">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
       <span>Stundenplan</span>
+    </button>
+    <button class="tab" role="tab" data-view="train" id="tabTrain" aria-controls="viewTrain">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 10h14M9 21l1.5-4M15 21l-1.5-4M8 21h8"/><circle cx="9" cy="13.5" r=".7" fill="currentColor"/><circle cx="15" cy="13.5" r=".7" fill="currentColor"/></svg>
+      <span>Bahn</span>
     </button>
     <button class="tab" role="tab" data-view="grades" id="tabGrades" aria-controls="viewGrades">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m8.5 14.5 2.5 2.5 4.5-5"/></svg>
@@ -3081,6 +3171,10 @@
     mv.layer = L.layerGroup().addTo(mv.map);
     const bounds = [];
     // Linienverlauf
+    (x.geo || []).forEach((g) => {
+      L.polyline(g.pts, { color: g.walk ? '#8e8e93' : g.color, weight: g.walk ? 4 : 6, opacity: .9, dashArray: g.walk ? '2 8' : null, lineCap: 'round' }).addTo(mv.layer);
+      g.pts.forEach((q) => bounds.push(q));
+    });
     (x.mapData || []).forEach((str) => {
       const parts = String(str).split('|'), type = parts[0], nums = parts.slice(1).filter((v) => v !== '').map(Number);
       const pts = [];
@@ -3105,23 +3199,24 @@
       mv.list.appendChild(li);
     };
     const startPos = x.legs[0] && x.legs[0].fromPos, endPos = x.legs[x.legs.length - 1] && x.legs[x.legs.length - 1].toPos;
-    mark(startPos, '●', 'home', '<b>Start</b><br>' + esc(transit.home));
-    item(startPos, 'Start', esc(transit.home) + ' · ' + hm(x.dep), '#34c759');
+    const startLbl = x.startLabel || transit.home;
+    mark(startPos, '●', 'home', '<b>Start</b><br>' + esc(startLbl));
+    item(startPos, 'Start', esc(startLbl) + ' · ' + hm(x.dep), '#34c759');
     x.rides.forEach((r, k) => {
-      const c = MOT_COLOR[r.type] || '#6e6e73';
-      const lbl = esc(r.from) + (r.platform ? ' · Steig ' + esc(r.platform) : '');
+      const c = r.color || MOT_COLOR[r.type] || '#6e6e73';
+      const lbl = esc(r.from) + platTxt(r.platform, r.pk);
       mark(r.fromPos, esc(r.platform || '↑'), 'stop" style="--mc:' + c, '<b>' + lbl + '</b><br>' + hm(r.dep) + ' ' + legChip(r) + ' Richtung ' + esc(r.dir || '')
-        + (r.fromPos ? '<br><a href="' + appleMaps(r.fromPos, r.from + ' Steig ' + (r.platform || '')) + '" target="_blank" rel="noopener">In Apple Karten öffnen</a>' : ''));
+        + (r.fromPos ? '<br><a href="' + appleMaps(r.fromPos, r.from + platName(r.platform, r.pk)) + '" target="_blank" rel="noopener">In Apple Karten öffnen</a>' : ''));
       item(r.fromPos, lbl, 'ab ' + hm(r.dep) + ' · ' + (MOT_NAME[r.type] || '') + ' ' + esc(r.line || '') + ' Richtung ' + esc(r.dir || ''), c);
       const t = x.transfers[k];
-      const albl = esc(r.to) + (r.arrPlatform ? ' · Steig ' + esc(r.arrPlatform) : '');
+      const albl = esc(r.to) + platTxt(r.arrPlatform, r.pk);
       mark(r.toPos, esc(r.arrPlatform || '↓'), 'stop arr" style="--mc:' + c, '<b>' + albl + '</b><br>an ' + hm(r.arr)
         + (t ? '<br>Umstieg ' + t.min + ' Min.' : '')
-        + (r.toPos ? '<br><a href="' + appleMaps(r.toPos, r.to + ' Steig ' + (r.arrPlatform || '')) + '" target="_blank" rel="noopener">In Apple Karten öffnen</a>' : ''));
+        + (r.toPos ? '<br><a href="' + appleMaps(r.toPos, r.to + platName(r.arrPlatform, r.pk)) + '" target="_blank" rel="noopener">In Apple Karten öffnen</a>' : ''));
       item(r.toPos, albl, 'an ' + hm(r.arr) + (t ? ' · <span class="' + (t.short ? 'late' : '') + '">Umstieg ' + t.min + ' Min.</span>' : ''), c);
     });
     mark(endPos, '⚑', 'dest', '<b>Ziel</b><br>an ' + hm(x.arr));
-    item(endPos, 'Ziel', esc((transit.dest[(new Date(x.arr).getDay() + 6) % 7] || '').split(',')[0]) + ' · an ' + hm(x.arr), '#ff3b30');
+    item(endPos, 'Ziel', esc(x.endLabel || (transit.dest[(new Date(x.arr).getDay() + 6) % 7] || '').split(',')[0]) + ' · an ' + hm(x.arr), '#ff3b30');
     setTimeout(() => {
       mv.map.invalidateSize();
       if (bounds.length) mv.map.fitBounds(bounds, { padding: [36, 36] });
@@ -3140,9 +3235,13 @@
         platform: a && a.Platform ? a.Platform.Name : '',
         arrPlatform: b && b.Platform ? b.Platform.Name : '',
         fromPos: a ? gk2wgs(Number(a.Latitude), Number(a.Longitude)) : null,
-        toPos: b ? gk2wgs(Number(b.Latitude), Number(b.Longitude)) : null
+        toPos: b ? gk2wgs(Number(b.Latitude), Number(b.Longitude)) : null,
+        pk: 'Steig'
       };
     });
+    return makeTrip(legs, { price: r.Price, dur: r.Duration, mapData: r.MapData || [] });
+  }
+  function makeTrip(legs, extras) {
     const withTime = legs.filter((l) => l.dep || l.arr);
     // Alles außer Fußwegen/Treppen zählt als Fahrt – unbekannte Verkehrsmittel werden grau angezeigt statt weggelassen
     const rides = legs.filter((l) => l.type && l.dep && !/^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type));
@@ -3153,10 +3252,10 @@
       const ia = legs.indexOf(a), ib = legs.indexOf(b);
       const walk = legs.slice(ia + 1, ib).reduce((sum, l) => sum + (l.dur || 0), 0);
       const min = a.arr && b.dep ? Math.round((b.dep - a.arr) / 60000) : null;
-      transfers.push({ at: a.to, to: b.from, fromPl: a.arrPlatform, toPl: b.platform, min, walk, short: min !== null && min < 5 });
+      transfers.push({ at: a.to, to: b.from, fromPl: a.arrPlatform, toPl: b.platform, fromPk: a.pk || 'Steig', toPk: b.pk || 'Steig', min, walk, short: min !== null && min < 5 });
     }
     return {
-      legs, rides, transfers, price: r.Price, dur: r.Duration, mapData: r.MapData || [],
+      legs, rides, transfers, ...extras,
       dep: withTime.length ? (withTime[0].dep || withTime[0].arr) : null,
       arr: withTime.length ? (withTime[withTime.length - 1].arr || withTime[withTime.length - 1].dep) : null,
       changes: Math.max(0, rides.length - 1)
@@ -3226,12 +3325,14 @@
   }
 
   function legChip(l) {
-    const c = MOT_COLOR[l.type] || '#6e6e73';
-    return '<span class="line-chip" style="--mc:' + c + '"><small>' + esc(MOT_NAME[l.type] || '') + '</small>' + esc(l.line || '') + '</span>';
+    const c = l.color || MOT_COLOR[l.type] || '#6e6e73';
+    return '<span class="line-chip" style="--mc:' + c + (l.textColor ? ';color:' + l.textColor : '') + '"><small>' + esc(MOT_NAME[l.type] || '') + '</small>' + esc(l.line || '') + '</span>';
   }
   // Ampel: knapp = nach Wunsch-Ankunft, aber vor Beginn · zu spät = nach Beginn der ersten Stunde
   const isWalk = (l) => /^(Footpath|MobilityStairs|Stairs|Escalator|Elevator|Wait)/i.test(l.type || '');
-  const steig = (n) => (n ? ' · Steig ' + esc(n) : '');
+  const platTxt = (n, pk) => (n ? ' · ' + (pk || 'Steig') + ' ' + esc(n) : '');
+  const platName = (n, pk) => (n ? ' ' + (pk || 'Steig') + ' ' + n : '');
+  const dtTag = (r) => (r.dt === undefined ? '' : ' <span class="dt-tag ' + (r.dt ? 'ok' : 'need') + '">' + (r.dt ? 'D-Ticket' : 'Fahrkarte nötig') + '</span>');
   function legsHtml(x) {
     const rows = [];
     const row = (t, body, cls = '') => rows.push('<div class="leg ' + cls + '"><span class="leg-t">' + t + '</span><span class="leg-b">' + body + '</span></div>');
@@ -3240,14 +3341,14 @@
     const before = x.legs.slice(0, firstRide).filter(isWalk);
     if (before.length) row(hm(before[0].dep), '🚶 ' + before.reduce((s0, l) => s0 + (l.dur || 0), 0) + ' Min. Fußweg zu ' + esc(x.rides[0] ? x.rides[0].from : before[before.length - 1].to), 'walk');
     x.rides.forEach((r, k) => {
-      row(hm(r.dep), legChip(r) + ' <span class="dir">Richtung ' + esc(r.dir || '') + '</span><br><small>ab ' + esc(r.from) + steig(r.platform) + '</small>' + pinLink(r.fromPos, r.from + ' Steig ' + (r.platform || '')), 'ride');
-      row(hm(r.arr), '<small>an ' + esc(r.to) + steig(r.arrPlatform) + '</small>' + pinLink(r.toPos, r.to + ' Steig ' + (r.arrPlatform || '')), 'ride-end');
+      row(hm(r.dep), legChip(r) + ' <span class="dir">Richtung ' + esc(r.dir || '') + '</span>' + dtTag(r) + '<br><small>ab ' + esc(r.from) + platTxt(r.platform, r.pk) + '</small>' + pinLink(r.fromPos, r.from + platName(r.platform, r.pk)), 'ride');
+      row(hm(r.arr), '<small>an ' + esc(r.to) + platTxt(r.arrPlatform, r.pk) + '</small>' + pinLink(r.toPos, r.to + platName(r.arrPlatform, r.pk)), 'ride-end');
       const t = x.transfers[k];
       if (t) {
         const same = t.at === t.to;
         const where = same
-          ? (t.fromPl && t.toPl ? (t.fromPl === t.toPl ? 'am selben Steig ' + esc(t.fromPl) : 'von Steig ' + esc(t.fromPl) + ' zu Steig ' + esc(t.toPl)) : 'in ' + esc(t.at))
-          : esc(t.at) + steig(t.fromPl) + ' → ' + esc(t.to) + steig(t.toPl);
+          ? (t.fromPl && t.toPl ? (t.fromPl === t.toPl && t.fromPk === t.toPk ? 'am selben ' + t.fromPk + ' ' + esc(t.fromPl) : 'von ' + t.fromPk + ' ' + esc(t.fromPl) + ' zu ' + t.toPk + ' ' + esc(t.toPl)) : 'in ' + esc(t.at))
+          : esc(t.at) + platTxt(t.fromPl, t.fromPk) + ' → ' + esc(t.to) + platTxt(t.toPl, t.toPk);
         row('', '<span class="xfer-k">' + (t.short ? '⚠︎ ' : '') + 'Umstieg ' + (t.min !== null ? t.min + ' Min.' : '') + '</span>'
           + '<small>' + where + (t.walk ? ' · ' + t.walk + ' Min. Fußweg' : '') + '</small>', 'xfer' + (t.short ? ' short' : ''));
       }
@@ -3274,13 +3375,14 @@
         : tooLate ? '<b class="flag orange">knapp · nach ' + hm(arriveBy) + '</b> · ' : '') + x.dur + ' Min. · ' + (x.changes ? x.changes + (x.changes === 1 ? ' Umstieg' : ' Umstiege') : 'direkt') + '</span></div>'
       + '<div class="trip-lines">' + x.rides.map(legChip).join('<span class="sep">›</span>') + '</div>'
       + '<div class="trip-sub">' + (first ? esc(first.line ? (MOT_NAME[first.type] || '') + ' ' + first.line : '') + ' ab ' + esc(first.from) + ' ' + hm(first.dep)
-        + (first.platform ? ' · Steig ' + esc(first.platform) : '') + (late ? ' <b class="late">+' + late + '</b>' : '') : '')
+        + platTxt(first.platform, first.pk) + (late ? ' <b class="late">+' + late + '</b>' : '') : '')
         + (inMin !== null && inMin >= 0 ? ' · losgehen in ' + fmtDur(inMin) : '')
         + (x.transfers.some((t) => t.short) ? ' · <b class="late">knapper Umstieg (' + Math.min(...x.transfers.filter((t) => t.short).map((t) => t.min)) + ' Min.)</b>' : '') + '</div>'
+      + (x.extraHtml || '')
       + '<div class="trip-legs" hidden>' + legsHtml(x) + '</div>';
     const toggle = () => { const lg = el.querySelector('.trip-legs'); lg.hidden = !lg.hidden; el.classList.toggle('open', !lg.hidden); el.setAttribute('aria-expanded', !lg.hidden); };
     el.addEventListener('click', (e) => {
-      if (e.target.closest('.pin')) return;                       // Apple Karten öffnet sich über den Link
+      if (e.target.closest('.pin, .price-btn')) return;           // Links öffnen sich selbst
       if (e.target.closest('.map-btn')) { openMap(x); return; }
       toggle();
     });
@@ -4125,8 +4227,267 @@
     renderPlan();
   });
 
+  // ---------- Bahn: Dresden ⇄ Leipzig (Fahrplan: Transitous / MOTIS) ----------
+  // Transitous ist eine freie europäische Fahrplanauskunft (inkl. DB-Fernverkehr, Gleise, Straßenbahn bis zur Haustür).
+  // Preise liefert sie nicht – dafür gibt es pro ICE/IC einen Link zur Preisprüfung auf bahn.de.
+  const MOTIS = 'https://api.transitous.org/api/v1/';
+  const PLACES = {
+    dresden: { label: 'Voglerstraße 46', place: '51.0416131,13.802287' },
+    jp: { label: 'Johannisplatz 20', place: '51.3373592,12.3857142' },
+    hbf: { label: 'Leipzig Hbf', place: 'de-DELFI_de:14713:8010205' }
+  };
+  const HBF = { dresden: 'de-DELFI_de:14612:28', leipzig: 'de-DELFI_de:14713:8010205' };
+  const FERN = ['HIGHSPEED_RAIL', 'LONG_DISTANCE', 'NIGHT_RAIL'];
+  const RAIL = /RAIL|SUBURBAN|METRO|LONG_DISTANCE/;
+  Object.assign(MOT_COLOR, {
+    HIGHSPEED_RAIL: '#ec0016', LONG_DISTANCE: '#ec0016', NIGHT_RAIL: '#ec0016', REGIONAL_FAST_RAIL: '#646973', REGIONAL_RAIL: '#646973',
+    SUBURBAN: '#408335', METRO: '#408335', SUBWAY: '#1455c0', TRAM: '#d6001c', BUS: '#0069b4', COACH: '#73d700', FERRY: '#0098d4'
+  });
+  Object.assign(MOT_NAME, { TRAM: 'Tram', BUS: 'Bus', FERRY: 'Fähre' });
+  const train = Object.assign({ dir: 'DL', lpz: 'jp', fvFilter: 'both' }, store.get('train', {}));
+  const saveTrain = () => store.set('train', train);
+
+  function decodePolyline(str, precision = 7) {
+    const factor = Math.pow(10, precision), pts = [];
+    let i = 0, lat = 0, lon = 0;
+    while (i < str.length) {
+      for (const which of [0, 1]) {
+        let shift = 0, result = 0, b;
+        do { b = str.charCodeAt(i++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20 && i < str.length);
+        const d = (result & 1) ? ~(result >> 1) : (result >> 1);
+        if (which === 0) lat += d; else lon += d;
+      }
+      pts.push([lat / factor, lon / factor]);
+    }
+    return pts;
+  }
+  const cleanLine = (s) => String(s || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^(RE|RB|S)(\d)/, '$1 $2');
+  const cleanStop = (s) => String(s || '').replace(/^Dresden Bahnhof Neustadt/, 'Dresden-Neustadt').replace(/ Hauptbahnhof\b/, ' Hbf');
+  const trackOf = (p) => String((p && (p.track || p.scheduledTrack)) || '').replace(/^Gl\.\s*/i, '').trim();
+
+  async function motis(path, params) {
+    const r = await fetch(MOTIS + path + '?' + new URLSearchParams(params));
+    if (!r.ok) throw new Error('net');
+    return r.json();
+  }
+  // Transitous-Reise → gleiches Format wie die DVB-Verbindungen (damit Karte, Gleise & Umstiege gleich funktionieren)
+  function fromMotis(it, startLabel, endLabel) {
+    const legs = it.legs.map((l) => {
+      const walk = l.mode === 'WALK', rail = RAIL.test(l.mode);
+      const name = (p, fallback) => (p.name === 'START' ? startLabel : p.name === 'END' ? endLabel : cleanStop(p.name) || fallback);
+      return {
+        type: walk ? 'Footpath' : l.mode, line: cleanLine(l.routeShortName || l.displayName), dir: cleanStop(l.headsign || ''),
+        dur: Math.round((l.duration || 0) / 60),
+        from: name(l.from, ''), to: name(l.to, ''),
+        dep: new Date(l.startTime), depPlan: new Date(l.scheduledStartTime || l.startTime), arr: new Date(l.endTime),
+        platform: trackOf(l.from), arrPlatform: trackOf(l.to), pk: rail ? 'Gleis' : 'Steig',
+        fromPos: [l.from.lat, l.from.lon], toPos: [l.to.lat, l.to.lon],
+        color: l.routeColor && !FERN.includes(l.mode) ? '#' + l.routeColor : '', textColor: l.routeTextColor ? '#' + l.routeTextColor : '',
+        fern: FERN.includes(l.mode), dt: walk ? undefined : !FERN.includes(l.mode) && l.mode !== 'COACH',
+        geo: l.legGeometry ? decodePolyline(l.legGeometry.points, l.legGeometry.precision || 7) : null
+      };
+    });
+    const x = makeTrip(legs, { dur: Math.round((it.duration || 0) / 60) });
+    x.geo = legs.filter((l) => l.geo && l.geo.length > 1).map((l) => ({ walk: l.type === 'Footpath', color: l.color || MOT_COLOR[l.type] || '#0a84ff', pts: l.geo }));
+    x.startLabel = startLabel; x.endLabel = endLabel;
+    x.coach = legs.some((l) => l.type === 'COACH');
+    return x;
+  }
+
+  // bahn.de-Suche für einen ICE/IC (Strecke, Datum, Uhrzeit vorbelegt)
+  function bahnLink(from, to, dep) {
+    const p = (n) => String(n).padStart(2, '0');
+    const hd = dep.getFullYear() + '-' + p(dep.getMonth() + 1) + '-' + p(dep.getDate()) + 'T' + p(dep.getHours()) + ':' + p(dep.getMinutes()) + ':00';
+    const e = encodeURIComponent;
+    return 'https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=' + e(from) + '&zo=' + e(to) + '&kl=2&soid=' + e('O=' + from) + '&zoid=' + e('O=' + to)
+      + '&hd=' + hd + '&hza=D&ar=false&s=true&d=false&hz=%5B%5D&fm=false&bp=false';
+  }
+  const fernStation = (s) => cleanStop(s).replace(/^Dresden Hbf.*/, 'Dresden Hbf').replace(/^Leipzig Hbf.*/, 'Leipzig Hbf');
+  function priceButton(r) {
+    return '<a class="price-btn press" target="_blank" rel="noopener" href="' + bahnLink(fernStation(r.from), fernStation(r.to), r.dep) + '">Preis bei der Bahn prüfen ↗</a>';
+  }
+  function dticketHtml(x) {
+    const fern = x.rides.filter((r) => r.fern);
+    if (x.coach) return '<div class="dt-line"><span class="dt need">Fernbus – nicht im Deutschlandticket</span></div>';
+    if (!fern.length) return '<div class="dt-line"><span class="dt ok">✓ komplett im Deutschlandticket</span></div>';
+    return '<div class="dt-line"><span class="dt need">' + fern.map((r) => esc(r.line)).join(' + ') + ': Fahrkarte nötig</span>'
+      + '<span class="dt ok small">Rest im D-Ticket</span></div>' + priceButton(fern[0]);
+  }
+
+  // ----- Oberfläche -----
+  const tr = {
+    dirSeg: createSegmented($('#dirSeg'), (v) => { train.dir = v; saveTrain(); renderTrain(); }),
+    lpzSeg: createSegmented($('#lpzSeg'), (v) => { train.lpz = v; saveTrain(); renderTrain(); }),
+    fvSeg: createSegmented($('#fvSeg'), (v) => { train.fvFilter = v; saveTrain(); renderFv(); }),
+    when: $('#trWhen'), res: $('#trRes'), go: $('#trGo'), fvToggle: $('#fvToggle'), fvWrap: $('#fvWrap'), fvList: $('#fvList'), fvSum: $('#fvSum')
+  };
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const localInput = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  tr.when.value = localInput(new Date());
+  $('#trNow').addEventListener('click', () => { tr.when.value = localInput(new Date()); });
+
+  function endpoints() {
+    const L = PLACES[train.lpz], D = PLACES.dresden;
+    return train.dir === 'DL' ? { from: D, to: L } : { from: L, to: D };
+  }
+  function renderTrain() {
+    tr.dirSeg.set(train.dir);
+    tr.lpzSeg.set(train.lpz);
+    $('#lpzLabel').textContent = train.dir === 'DL' ? 'Ziel in Leipzig' : 'Start in Leipzig';
+    renderFvSummary();
+  }
+
+  let trShown = [], trCursor = { prev: null, next: null }, trLabels = null;
+  async function trainSearch(cursorDir) {
+    const { from, to } = endpoints();
+    const params = { fromPlace: from.place, toPlace: to.place, numItineraries: '5' };
+    if (cursorDir) params.pageCursor = trCursor[cursorDir];
+    else {
+      const t = tr.when.value ? new Date(tr.when.value) : new Date();
+      params.time = t.toISOString();
+      trShown = []; trLabels = { from: from.label, to: to.label };
+      tr.res.innerHTML = '<div class="trip-status"><span class="spinner"></span> Verbindungen werden gesucht …</div>';
+    }
+    const j = await motis('plan', params);
+    const got = (j.itineraries || []).map((it) => fromMotis(it, trLabels.from, trLabels.to)).filter((x) => !x.coach && x.dep && x.arr);
+    if (!cursorDir || cursorDir === 'prev') trCursor.prev = j.previousPageCursor || trCursor.prev;
+    if (!cursorDir || cursorDir === 'next') trCursor.next = j.nextPageCursor || trCursor.next;
+    const seen = new Set(trShown.map(tripKey));
+    const add = got.filter((x) => !seen.has(tripKey(x)));
+    trShown = trShown.concat(add).sort((a, b) => a.dep - b.dep);
+    return add;
+  }
+  function renderTrainResults(focusKey) {
+    tr.res.innerHTML = '';
+    if (!trShown.length) { tr.res.innerHTML = '<div class="trip-status">Keine Verbindung gefunden.</div>'; return; }
+    const h = document.createElement('h4'); h.className = 'section-title'; h.style.margin = '.25rem 0 -.25rem 1rem';
+    h.textContent = trLabels.from + ' → ' + trLabels.to;
+    tr.res.appendChild(h);
+    const more = (dir, label) => {
+      const b = document.createElement('button'); b.className = 'more-btn press'; b.textContent = label;
+      b.addEventListener('click', async () => {
+        b.disabled = true; b.innerHTML = '<span class="spinner"></span> Suche …';
+        try {
+          const add = await trainSearch(dir);
+          if (!add.length) { b.textContent = dir === 'prev' ? 'Keine früheren gefunden' : 'Keine späteren gefunden'; return; }
+          renderTrainResults(tripKey(dir === 'prev' ? add[add.length - 1] : add[0]));
+        } catch (e) { b.disabled = false; b.textContent = 'Keine Verbindung – nochmal versuchen'; }
+      });
+      return b;
+    };
+    tr.res.appendChild(more('prev', '↑ Früher'));
+    let focusEl = null;
+    const today = new Date().toDateString();
+    trShown.forEach((x, i) => {
+      if (i === 0 || x.dep.toDateString() !== trShown[i - 1].dep.toDateString()) {
+        const dh = document.createElement('div'); dh.className = 'day-head';
+        dh.textContent = x.dep.toDateString() === today ? 'Heute' : x.dep.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        tr.res.appendChild(dh);
+      }
+      x.extraHtml = dticketHtml(x);
+      const c = tripCard(x, x.dep.toDateString() === today, null, null);
+      if (focusKey && tripKey(x) === focusKey) { focusEl = c; c.classList.add('new'); }
+      tr.res.appendChild(c);
+    });
+    tr.res.appendChild(more('next', '↓ Später'));
+    const src = document.createElement('p'); src.className = 'sheet-note'; src.style.margin = '0 1rem';
+    src.innerHTML = 'Fahrplan: <a href="https://transitous.org" target="_blank" rel="noopener">Transitous</a> (freie Fahrplanauskunft, Echtzeit sofern verfügbar). Preise kann die App nicht abfragen.';
+    tr.res.appendChild(src);
+    if (focusEl) setTimeout(() => focusEl.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'nearest' }), 40);
+  }
+  tr.go.addEventListener('click', async () => {
+    tr.go.disabled = true;
+    try { await trainSearch(); renderTrainResults(); haptic(8); }
+    catch (e) { tr.res.innerHTML = '<div class="trip-status">Keine Verbindung zur Fahrplanauskunft. Bitte Internet prüfen.</div>'; }
+    tr.go.disabled = false;
+  });
+
+  // ----- ICE/IC der nächsten 10 Tage (beide Richtungen) -----
+  const FV_DAYS = 10, FV_TTL = 3 * 3600 * 1000;
+  let fv = store.get('fvCache', null);
+  if (fv && (Date.now() - fv.ts > FV_TTL)) fv = null;
+  let fvLoading = false;
+  function renderFvSummary() {
+    if (fvLoading) { tr.fvSum.textContent = 'lädt …'; return; }
+    if (!fv) { tr.fvSum.textContent = 'antippen zum Laden'; return; }
+    tr.fvSum.textContent = fv.items.length + ' Fahrten';
+  }
+  async function loadFv() {
+    if (fvLoading) return;
+    fvLoading = true; renderFvSummary();
+    tr.fvList.innerHTML = '<div class="trip-status"><span class="spinner"></span> <span id="fvProg">ICE/IC werden gesucht …</span></div>';
+    const jobs = [];
+    const base = new Date(); base.setHours(0, 0, 0, 0);
+    for (let k = 0; k < FV_DAYS; k++) {
+      const day = new Date(base.getFullYear(), base.getMonth(), base.getDate() + k, 4, 0);
+      jobs.push({ day, dir: 'DL', from: HBF.dresden, to: HBF.leipzig }, { day, dir: 'LD', from: HBF.leipzig, to: HBF.dresden });
+    }
+    const items = []; let done = 0, failed = 0;
+    const run = async (job) => {
+      try {
+        const j = await motis('plan', { fromPlace: job.from, toPlace: job.to, time: job.day.toISOString(), searchWindow: '72000', numItineraries: '40', transitModes: 'HIGHSPEED_RAIL,LONG_DISTANCE' });
+        (j.itineraries || []).forEach((it) => {
+          const rides = it.legs.filter((l) => l.mode !== 'WALK');
+          if (rides.length !== 1 || !FERN.includes(rides[0].mode)) return;   // nur direkte ICE/IC
+          const l = rides[0], dep = new Date(l.startTime);
+          if (dep.toDateString() !== job.day.toDateString() || dep < new Date()) return;
+          items.push({ dir: job.dir, line: cleanLine(l.routeShortName || l.displayName), dep: l.startTime, arr: l.endTime,
+            from: fernStation(l.from.name), to: fernStation(l.to.name), track: trackOf(l.from), headsign: cleanStop(l.headsign || ''), rt: !!l.realTime });
+        });
+      } catch (e) { failed++; }
+      done++;
+      const pg = document.getElementById('fvProg'); if (pg) pg.textContent = 'ICE/IC werden gesucht … ' + Math.round(done / jobs.length * 100) + ' %';
+    };
+    // höchstens 3 Abfragen gleichzeitig – schont den freien Dienst
+    const queue = jobs.slice();
+    await Promise.all([0, 1, 2].map(async () => { while (queue.length) await run(queue.shift()); }));
+    const seen = new Set();
+    fv = { ts: Date.now(), failed, items: items.filter((i) => { const k = i.dir + i.dep + i.line; if (seen.has(k)) return false; seen.add(k); return true; })
+      .sort((a, b) => new Date(a.dep) - new Date(b.dep)) };
+    if (!failed) store.set('fvCache', fv);
+    fvLoading = false;
+    renderFvSummary(); renderFv();
+  }
+  function renderFv() {
+    tr.fvSeg.set(train.fvFilter);
+    if (!fv) return;
+    const list = fv.items.filter((i) => train.fvFilter === 'both' || i.dir === train.fvFilter);
+    tr.fvList.innerHTML = '';
+    if (!list.length) { tr.fvList.innerHTML = '<div class="trip-status">Keine ICE/IC gefunden.</div>'; return; }
+    let lastDay = '';
+    list.forEach((i) => {
+      const dep = new Date(i.dep), arr = new Date(i.arr);
+      const day = dep.toDateString();
+      if (day !== lastDay) {
+        const dh = document.createElement('div'); dh.className = 'fv-day';
+        dh.textContent = dep.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        tr.fvList.appendChild(dh); lastDay = day;
+      }
+      const row = document.createElement('div'); row.className = 'fv-row';
+      const mins = Math.round((arr - dep) / 60000);
+      row.innerHTML = '<span class="fv-dir">' + (i.dir === 'DL' ? 'DD → L' : 'L → DD') + '</span>'
+        + '<span class="fv-main"><b>' + hm(dep) + ' → ' + hm(arr) + '</b> <span class="line-chip" style="--mc:#ec0016">' + esc(i.line) + '</span>'
+        + '<small>' + esc(i.from) + (i.track ? ' · Gleis ' + esc(i.track) : '') + ' → ' + esc(i.to) + ' · ' + Math.floor(mins / 60) + ':' + pad2(mins % 60) + ' h</small></span>'
+        + '<a class="price-btn small press" target="_blank" rel="noopener" href="' + bahnLink(i.from, i.to, dep) + '">Preis ↗</a>';
+      tr.fvList.appendChild(row);
+    });
+    const note = document.createElement('p'); note.className = 'fv-note';
+    note.innerHTML = 'Nur direkte ICE/IC zwischen Dresden Hbf/Neustadt und Leipzig Hbf. Den Super Sparpreis (4,99 €) zeigt erst bahn.de: '
+      + '<b>„Preis ↗“</b> öffnet die Suche mit Strecke und Uhrzeit. Dort einmal <b>1 Person, 24 Jahre</b> und <b>Deutschland-Ticket vorhanden</b> einstellen.'
+      + (fv.failed ? ' <b class="late">' + fv.failed + ' Abfragen sind fehlgeschlagen – bitte neu laden.</b>' : '')
+      + ' <button class="link-btn" id="fvReload">Neu laden</button>';
+    tr.fvList.appendChild(note);
+    $('#fvReload').addEventListener('click', () => { fv = null; loadFv(); });
+  }
+  tr.fvToggle.addEventListener('click', () => {
+    const open = !tr.fvWrap.classList.contains('open');
+    tr.fvWrap.classList.toggle('open', open);
+    tr.fvToggle.setAttribute('aria-expanded', open);
+    if (open) { if (fv) renderFv(); else loadFv(); }
+  });
+
   // ---------- Bereiche (Tab-Leiste) ----------
-  const views = { grades: $('#viewGrades'), plan: $('#viewPlan') };
+  const views = { grades: $('#viewGrades'), plan: $('#viewPlan'), train: $('#viewTrain') };
   function setView(v) {
     if (!views[v]) v = 'grades';
     const changed = state.view !== v;
@@ -4136,12 +4497,12 @@
       if (k === v && changed) { node.classList.remove('fade-in'); void node.offsetWidth; node.classList.add('fade-in'); }
     });
     document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.view === v));
-    const title = v === 'plan' ? 'Stundenplan' : 'Notenrechner';
+    const title = { plan: 'Stundenplan', train: 'Bahn', grades: 'Notenrechner' }[v];
     $('#bigTitle').textContent = title; navTitle.textContent = title;
     $('#bigSub').textContent = v === 'plan'
       ? new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })
-      : 'Punkte eingeben, Note sehen.';
-    if (v === 'plan') renderPlan(); else render();
+      : v === 'train' ? 'Dresden ⇄ Leipzig' : 'Punkte eingeben, Note sehen.';
+    if (v === 'plan') renderPlan(); else if (v === 'train') renderTrain(); else render();
     if (changed) window.scrollTo(0, 0);
   }
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => setView(t.dataset.view)));

@@ -124,11 +124,28 @@ Für die Suche werden nur diese Adressen an die Fahrplanauskunft des VVO übermi
 
 ---
 
+## Bahn (Dresden ⇄ Leipzig)
+
+Reiter **Bahn** in der Tab-Leiste:
+
+- **Verbindung:** Richtung wählen (Dresden → Leipzig oder umgekehrt), in Leipzig **Johannisplatz 20**
+  oder **Hbf**, in Dresden immer **Voglerstraße 46**. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot),
+  Karte und **↑ Früher / ↓ Später**. Mit Deutschlandticket ist alles außer ICE/IC enthalten –
+  das zeigt jede Verbindung an.
+- **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden und
+  Leipzig in beide Richtungen. Preise kann die App nicht abfragen (die Bahn bietet dafür keine offene
+  Schnittstelle) – **„Preis ↗“** öffnet bahn.de mit Strecke und Uhrzeit. Dort einmal
+  *1 Person, 24 Jahre* und *Deutschland-Ticket vorhanden* einstellen, dann ist der Super Sparpreis sichtbar.
+
+Fahrplandaten: Transitous (freie Fahrplanauskunft).
+
+---
+
 ## Updates veröffentlichen
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v15';` hochzählen (`'v16'`, `'v17'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v16';` hochzählen (`'v17'`, `'v18'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
