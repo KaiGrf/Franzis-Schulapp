@@ -513,6 +513,18 @@
   .fv-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .125rem .375rem; font-variant-numeric: tabular-nums; }
   .fv-main small { flex-basis: 100%; color: var(--label-2); font-size: .75rem; }
   .fv-main .line-chip { font-size: .75rem; }
+  .fv-only { margin: 0 0 .25rem; padding-top: .25rem; padding-bottom: .5rem; min-height: 0; }
+  .fv-day { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .bp-links { display: flex; gap: .625rem; text-transform: none; letter-spacing: 0; }
+  .bp-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: .75rem; white-space: nowrap; }
+  .fv-acts { flex: none; display: flex; flex-direction: column; gap: .3125rem; align-items: stretch; }
+  .mark-btn {
+    border: 0; border-radius: 999px; padding: .3125rem .625rem; font-size: .8125rem; font-weight: 700;
+    background: var(--fill); color: var(--label-2); transition: background-color .15s, color .15s, transform .1s ease-out;
+  }
+  .mark-btn[aria-pressed="true"] { background: #34c759; color: #fff; }
+  .fv-row.marked { background: color-mix(in srgb, #34c759 10%, transparent); box-shadow: inset 3px 0 0 #34c759; margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
+  .dt.deal { background: #34c759; color: #fff; }
   .fv-note { margin: .75rem 0 0; font-size: .8125rem; line-height: 1.45; color: var(--label-2); }
   .price-btn {
     display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 999px;
@@ -1245,6 +1257,10 @@
         <button role="radio" data-v="both">Beide</button>
         <button role="radio" data-v="DL" aria-label="Dresden nach Leipzig">DD → L</button>
         <button role="radio" data-v="LD" aria-label="Leipzig nach Dresden">L → DD</button>
+      </div>
+      <div class="row fv-only">
+        <label class="row-label" for="fvOnly">Nur 4,99 €<small>Fahrten, die du als verfügbar markiert hast</small></label>
+        <label class="switch"><input type="checkbox" id="fvOnly" role="switch"><span></span></label>
       </div>
       <div class="fv-list" id="fvList"></div>
     </div></div>
@@ -4295,22 +4311,41 @@
   }
 
   // bahn.de-Suche für einen ICE/IC (Strecke, Datum, Uhrzeit vorbelegt)
-  function bahnLink(from, to, dep) {
+  function bahnLink(from, to, dep, bestpreis) {
     const p = (n) => String(n).padStart(2, '0');
     const hd = dep.getFullYear() + '-' + p(dep.getMonth() + 1) + '-' + p(dep.getDate()) + 'T' + p(dep.getHours()) + ':' + p(dep.getMinutes()) + ':00';
     const e = encodeURIComponent;
     return 'https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=' + e(from) + '&zo=' + e(to) + '&kl=2&soid=' + e('O=' + from) + '&zoid=' + e('O=' + to)
-      + '&hd=' + hd + '&hza=D&ar=false&s=true&d=false&hz=%5B%5D&fm=false&bp=false';
+      + '&hd=' + hd + '&hza=D&ar=false&s=true&d=false&hz=%5B%5D&fm=false&bp=' + (bestpreis ? 'true' : 'false');
   }
   const fernStation = (s) => cleanStop(s).replace(/^Dresden Hbf.*/, 'Dresden Hbf').replace(/^Leipzig Hbf.*/, 'Leipzig Hbf');
   function priceButton(r) {
     return '<a class="price-btn press" target="_blank" rel="noopener" href="' + bahnLink(fernStation(r.from), fernStation(r.to), r.dep) + '">Preis bei der Bahn prüfen ↗</a>';
   }
+  const fvMarks = store.get('fvMarks', {});
+  (function prune() {
+    const cut = Date.now() - 6 * 3600 * 1000; let changed = false;
+    Object.keys(fvMarks).forEach((k) => { if (Number(k.split('|')[1]) < cut) { delete fvMarks[k]; changed = true; } });
+    if (changed) store.set('fvMarks', fvMarks);
+  })();
+  const markKey = (line, dep) => cleanLine(line) + '|' + new Date(dep).getTime();
+  const isMarked = (line, dep) => !!fvMarks[markKey(line, dep)];
+  function toggleMark(line, dep) {
+    const k = markKey(line, dep);
+    if (fvMarks[k]) delete fvMarks[k]; else fvMarks[k] = true;
+    store.set('fvMarks', fvMarks);
+    haptic(8);
+    return !!fvMarks[k];
+  }
+  const markCount = () => Object.keys(fvMarks).filter((k) => Number(k.split('|')[1]) > Date.now()).length;
+
   function dticketHtml(x) {
     const fern = x.rides.filter((r) => r.fern);
     if (x.coach) return '<div class="dt-line"><span class="dt need">Fernbus – nicht im Deutschlandticket</span></div>';
     if (!fern.length) return '<div class="dt-line"><span class="dt ok">✓ komplett im Deutschlandticket</span></div>';
-    return '<div class="dt-line"><span class="dt need">' + fern.map((r) => esc(r.line)).join(' + ') + ': Fahrkarte nötig</span>'
+    const deal = fern.every((r) => isMarked(r.line, r.dep));
+    return '<div class="dt-line">' + (deal ? '<span class="dt deal">4,99 € ✓ markiert</span>' : '')
+      + '<span class="dt need">' + fern.map((r) => esc(r.line)).join(' + ') + ': Fahrkarte nötig</span>'
       + '<span class="dt ok small">Rest im D-Ticket</span></div>' + priceButton(fern[0]);
   }
 
@@ -4413,7 +4448,8 @@
   function renderFvSummary() {
     if (fvLoading) { tr.fvSum.textContent = 'lädt …'; return; }
     if (!fv) { tr.fvSum.textContent = 'antippen zum Laden'; return; }
-    tr.fvSum.textContent = fv.items.length + ' Fahrten';
+    const m = markCount();
+    tr.fvSum.textContent = (m ? m + '× 4,99 € · ' : '') + fv.items.length + ' Fahrten';
   }
   async function loadFv() {
     if (fvLoading) return;
@@ -4455,34 +4491,56 @@
   function renderFv() {
     tr.fvSeg.set(train.fvFilter);
     if (!fv) return;
-    const list = fv.items.filter((i) => train.fvFilter === 'both' || i.dir === train.fvFilter);
+    $('#fvOnly').checked = !!train.fvOnly;
+    const list = fv.items.filter((i) => (train.fvFilter === 'both' || i.dir === train.fvFilter) && (!train.fvOnly || isMarked(i.line, i.dep)));
     tr.fvList.innerHTML = '';
-    if (!list.length) { tr.fvList.innerHTML = '<div class="trip-status">Keine ICE/IC gefunden.</div>'; return; }
+    if (!list.length) {
+      tr.fvList.innerHTML = '<div class="trip-status">' + (train.fvOnly
+        ? 'Noch keine Fahrt als 4,99 € markiert. Schalter aus, Fahrten über „Preis ↗“ oder „Bestpreise ↗“ prüfen und auf „4,99 €“ tippen.'
+        : 'Keine ICE/IC gefunden.') + '</div>';
+      return;
+    }
     let lastDay = '';
     list.forEach((i) => {
       const dep = new Date(i.dep), arr = new Date(i.arr);
       const day = dep.toDateString();
       if (day !== lastDay) {
         const dh = document.createElement('div'); dh.className = 'fv-day';
-        dh.textContent = dep.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        const dayStart = new Date(dep.getFullYear(), dep.getMonth(), dep.getDate(), 5, 0);
+        const bp = (dir) => '<a class="bp-link" target="_blank" rel="noopener" href="'
+          + (dir === 'DL' ? bahnLink('Dresden Hbf', 'Leipzig Hbf', dayStart, true) : bahnLink('Leipzig Hbf', 'Dresden Hbf', dayStart, true)) + '">'
+          + (dir === 'DL' ? 'DD → L' : 'L → DD') + ' Bestpreise ↗</a>';
+        dh.innerHTML = '<span>' + dep.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) + '</span>'
+          + '<span class="bp-links">' + (train.fvFilter !== 'LD' ? bp('DL') : '') + (train.fvFilter !== 'DL' ? bp('LD') : '') + '</span>';
         tr.fvList.appendChild(dh); lastDay = day;
       }
-      const row = document.createElement('div'); row.className = 'fv-row';
+      const row = document.createElement('div'); row.className = 'fv-row' + (isMarked(i.line, i.dep) ? ' marked' : '');
       const mins = Math.round((arr - dep) / 60000);
       row.innerHTML = '<span class="fv-dir">' + (i.dir === 'DL' ? 'DD → L' : 'L → DD') + '</span>'
         + '<span class="fv-main"><b>' + hm(dep) + ' → ' + hm(arr) + '</b> <span class="line-chip" style="--mc:#ec0016">' + esc(i.line) + '</span>'
         + '<small>' + esc(i.from) + (i.track ? ' · Gleis ' + esc(i.track) : '') + ' → ' + esc(i.to) + ' · ' + Math.floor(mins / 60) + ':' + pad2(mins % 60) + ' h</small></span>'
-        + '<a class="price-btn small press" target="_blank" rel="noopener" href="' + bahnLink(i.from, i.to, dep) + '">Preis ↗</a>';
+        + '<span class="fv-acts"><a class="price-btn small press" target="_blank" rel="noopener" href="' + bahnLink(i.from, i.to, dep) + '">Preis ↗</a>'
+        + '<button class="mark-btn press" aria-pressed="' + isMarked(i.line, i.dep) + '" aria-label="' + esc(i.line) + ' ' + hm(dep) + ' für 4,99 € verfügbar markieren">4,99 €</button></span>';
+      row.querySelector('.mark-btn').addEventListener('click', (e) => {
+        const on = toggleMark(i.line, i.dep);
+        e.currentTarget.setAttribute('aria-pressed', on);
+        row.classList.toggle('marked', on);
+        renderFvSummary();
+        if (train.fvOnly && !on) renderFv();
+      });
       tr.fvList.appendChild(row);
     });
     const note = document.createElement('p'); note.className = 'fv-note';
-    note.innerHTML = 'Nur direkte ICE/IC zwischen Dresden Hbf und Leipzig Hbf (Richtung Leipzig immer ab Dresden Hbf). Den Super Sparpreis (4,99 €) zeigt erst bahn.de: '
-      + '<b>„Preis ↗“</b> öffnet die Suche mit Strecke und Uhrzeit. Dort einmal <b>1 Person, 24 Jahre</b> und <b>Deutschland-Ticket vorhanden</b> einstellen.'
+    note.innerHTML = 'Nur direkte ICE/IC zwischen Dresden Hbf und Leipzig Hbf (Richtung Leipzig immer ab Dresden Hbf). '
+      + 'Preise kann die App nicht selbst abfragen: <b>„Bestpreise ↗“</b> zeigt die günstigsten Preise des Tages auf bahn.de, <b>„Preis ↗“</b> eine einzelne Fahrt. '
+      + 'Ist der Super Sparpreis für 4,99 € verfügbar, tippe hier auf <b>„4,99 €“</b> – mit <b>„Nur 4,99 €“</b> siehst du dann nur noch diese Fahrten. '
+      + 'Auf bahn.de einmal <b>1 Person, 24 Jahre</b> und <b>Deutschland-Ticket vorhanden</b> einstellen.'
       + (fv.failed ? ' <b class="late">' + fv.failed + ' Abfragen sind fehlgeschlagen – bitte neu laden.</b>' : '')
       + ' <button class="link-btn" id="fvReload">Neu laden</button>';
     tr.fvList.appendChild(note);
     $('#fvReload').addEventListener('click', () => { fv = null; loadFv(); });
   }
+  $('#fvOnly').addEventListener('change', (e) => { train.fvOnly = e.target.checked; saveTrain(); renderFv(); });
   tr.fvToggle.addEventListener('click', () => {
     const open = !tr.fvWrap.classList.contains('open');
     tr.fvWrap.classList.toggle('open', open);

@@ -132,10 +132,14 @@ Reiter **Bahn** in der Tab-Leiste:
   oder **Hbf**, in Dresden immer **Voglerstraße 46**. Richtung Leipzig geht es immer über **Dresden Hbf**. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot),
   Karte und **↑ Früher / ↓ Später**. Mit Deutschlandticket ist alles außer ICE/IC enthalten –
   das zeigt jede Verbindung an.
-- **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden und
-  Leipzig in beide Richtungen. Preise kann die App nicht abfragen (die Bahn bietet dafür keine offene
-  Schnittstelle) – **„Preis ↗“** öffnet bahn.de mit Strecke und Uhrzeit. Dort einmal
-  *1 Person, 24 Jahre* und *Deutschland-Ticket vorhanden* einstellen, dann ist der Super Sparpreis sichtbar.
+- **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden Hbf und
+  Leipzig Hbf in beide Richtungen. Preise kann die App nicht selbst abfragen (die Bahn bietet dafür keine
+  offene Schnittstelle). Deshalb:
+  - **„Bestpreise ↗“** (pro Tag und Richtung) öffnet die Bestpreis-Suche auf bahn.de,
+    **„Preis ↗“** eine einzelne Fahrt. Dort einmal *1 Person, 24 Jahre* und *Deutschland-Ticket vorhanden* einstellen.
+  - Gibt es den Super Sparpreis für 4,99 €, in der App auf **„4,99 €“** tippen. Der Schalter
+    **„Nur 4,99 €“** zeigt dann nur noch diese Fahrten; markierte Züge erscheinen auch in der
+    Verbindungssuche mit „4,99 € ✓“.
 
 Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
@@ -145,7 +149,7 @@ Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v17';` hochzählen (`'v18'`, `'v19'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v18';` hochzählen (`'v19'`, `'v20'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
