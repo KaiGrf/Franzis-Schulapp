@@ -4341,6 +4341,8 @@
   async function trainSearch(cursorDir) {
     const { from, to } = endpoints();
     const params = { fromPlace: from.place, toPlace: to.place, numItineraries: '5' };
+    // Dresden → Leipzig immer über Dresden Hbf (nicht über Dresden-Neustadt)
+    if (train.dir === 'DL') params.via = HBF.dresden;
     if (cursorDir) params.pageCursor = trCursor[cursorDir];
     else {
       const t = tr.when.value ? new Date(tr.when.value) : new Date();
@@ -4349,7 +4351,8 @@
       tr.res.innerHTML = '<div class="trip-status"><span class="spinner"></span> Verbindungen werden gesucht …</div>';
     }
     const j = await motis('plan', params);
-    const got = (j.itineraries || []).map((it) => fromMotis(it, trLabels.from, trLabels.to)).filter((x) => !x.coach && x.dep && x.arr);
+    const viaHbf = (x) => train.dir !== 'DL' || x.rides.some((r) => r.fern || /RAIL/.test(r.type) ? /^Dresden Hbf/.test(r.from) : false) || !x.rides.some((r) => /RAIL|LONG_DISTANCE/.test(r.type));
+    const got = (j.itineraries || []).map((it) => fromMotis(it, trLabels.from, trLabels.to)).filter((x) => !x.coach && x.dep && x.arr && viaHbf(x));
     if (!cursorDir || cursorDir === 'prev') trCursor.prev = j.previousPageCursor || trCursor.prev;
     if (!cursorDir || cursorDir === 'next') trCursor.next = j.nextPageCursor || trCursor.next;
     const seen = new Set(trShown.map(tripKey));
@@ -4430,6 +4433,7 @@
           const rides = it.legs.filter((l) => l.mode !== 'WALK');
           if (rides.length !== 1 || !FERN.includes(rides[0].mode)) return;   // nur direkte ICE/IC
           const l = rides[0], dep = new Date(l.startTime);
+          if (job.dir === 'DL' && !/^Dresden Hbf/.test(fernStation(l.from.name))) return;   // ab Dresden Hbf
           if (dep.toDateString() !== job.day.toDateString() || dep < new Date()) return;
           items.push({ dir: job.dir, line: cleanLine(l.routeShortName || l.displayName), dep: l.startTime, arr: l.endTime,
             from: fernStation(l.from.name), to: fernStation(l.to.name), track: trackOf(l.from), headsign: cleanStop(l.headsign || ''), rt: !!l.realTime });
@@ -4472,7 +4476,7 @@
       tr.fvList.appendChild(row);
     });
     const note = document.createElement('p'); note.className = 'fv-note';
-    note.innerHTML = 'Nur direkte ICE/IC zwischen Dresden Hbf/Neustadt und Leipzig Hbf. Den Super Sparpreis (4,99 €) zeigt erst bahn.de: '
+    note.innerHTML = 'Nur direkte ICE/IC zwischen Dresden Hbf und Leipzig Hbf (Richtung Leipzig immer ab Dresden Hbf). Den Super Sparpreis (4,99 €) zeigt erst bahn.de: '
       + '<b>„Preis ↗“</b> öffnet die Suche mit Strecke und Uhrzeit. Dort einmal <b>1 Person, 24 Jahre</b> und <b>Deutschland-Ticket vorhanden</b> einstellen.'
       + (fv.failed ? ' <b class="late">' + fv.failed + ' Abfragen sind fehlgeschlagen – bitte neu laden.</b>' : '')
       + ' <button class="link-btn" id="fvReload">Neu laden</button>';

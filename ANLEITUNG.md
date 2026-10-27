@@ -129,7 +129,7 @@ Für die Suche werden nur diese Adressen an die Fahrplanauskunft des VVO übermi
 Reiter **Bahn** in der Tab-Leiste:
 
 - **Verbindung:** Richtung wählen (Dresden → Leipzig oder umgekehrt), in Leipzig **Johannisplatz 20**
-  oder **Hbf**, in Dresden immer **Voglerstraße 46**. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot),
+  oder **Hbf**, in Dresden immer **Voglerstraße 46**. Richtung Leipzig geht es immer über **Dresden Hbf**. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot),
   Karte und **↑ Früher / ↓ Später**. Mit Deutschlandticket ist alles außer ICE/IC enthalten –
   das zeigt jede Verbindung an.
 - **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden und
@@ -145,7 +145,7 @@ Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v16';` hochzählen (`'v17'`, `'v18'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v17';` hochzählen (`'v18'`, `'v19'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
