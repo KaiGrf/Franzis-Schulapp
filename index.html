@@ -550,6 +550,24 @@
   .relax-btn:disabled { color: var(--label-2); background: var(--fill); }
   .trip.relaxed { box-shadow: inset 4px 0 0 #34c759, var(--shadow); }
   .buf-tag { font-size: .8125rem; font-weight: 600; color: var(--label-2); }
+  .occ { display: flex; align-items: center; gap: .5rem; font-size: .8125rem; color: var(--label-2); line-height: 1.35; }
+  .occ b { color: var(--label); }
+  .occ small { color: var(--label-3); }
+  .occ-bars { flex: none; display: inline-flex; gap: 2px; align-items: flex-end; }
+  .occ-bars i { width: 4px; border-radius: 1px; background: var(--fill-2); }
+  .occ-bars i:nth-child(1) { height: 6px; } .occ-bars i:nth-child(2) { height: 9px; }
+  .occ-bars i:nth-child(3) { height: 12px; } .occ-bars i:nth-child(4) { height: 15px; }
+  .occ-1 .occ-bars i.on, .occ-2 .occ-bars i.on { background: #34c759; }
+  .occ-3 .occ-bars i.on { background: #ff9500; }
+  .occ-4 .occ-bars i.on { background: var(--danger); }
+  .trip.mini { padding: .5rem .875rem; gap: .125rem; opacity: .62; box-shadow: none; background: var(--fill); }
+  .trip.mini > :not(.trip-top, .mini-tag) { display: none; }
+  .trip.mini .trip-times { font-size: 1rem; }
+  .trip.mini .trip-meta { font-size: .8125rem; }
+  .mini-tag { font-size: .75rem; color: var(--label-2); }
+  .trip.relaxed { padding: 1.125rem 1.125rem; gap: .5rem; }
+  .trip.relaxed .trip-times { font-size: 1.75rem; }
+  .trip.relaxed .relaxed-tag { font-size: .9375rem; }
   .buf-tag.warn { color: var(--danger); }
   .relaxed-tag { font-size: .8125rem; font-weight: 700; color: #1f9d48; }
   [data-theme="dark"] .relaxed-tag { color: #4cd964; }
@@ -1302,12 +1320,18 @@
         <button class="link-btn" id="trNow">Jetzt</button>
       </div>
       <div class="row">
-        <label class="row-label" for="trBuf">15 Min. vor dem RE 50 am Bahnhof<small>Gilt für den Regionalzug – notfalls eine Tram früher</small></label>
+        <label class="row-label" for="trBuf">Rechtzeitig am Bahnhof<small id="trBufSub">15 Min. vor dem RE 50 – notfalls eine Tram früher</small></label>
         <label class="switch"><input type="checkbox" id="trBuf" role="switch"><span></span></label>
+      </div>
+      <div class="row" id="trBufRow">
+        <span class="row-label">Am Bahnhof sein</span>
+        <div class="buf"><button class="step-mini press" id="trBufMinus" aria-label="5 Minuten weniger">−</button>
+        <input type="number" inputmode="numeric" min="0" max="60" id="trBufMin" aria-label="Minuten vor Abfahrt des RE 50"><span>Min. vorher</span>
+        <button class="step-mini press" id="trBufPlus" aria-label="5 Minuten mehr">+</button></div>
       </div>
       <div class="ed-actions"><button class="btn primary press" id="trGo">Verbindungen suchen</button></div>
     </div>
-    <p class="section-foot">Gesucht werden nur Verbindungen im Deutschlandticket (Regionalzüge, S-Bahn, Tram, Bus). ICE/IC stehen oben unter „ICE/IC · nächste 10 Tage“.</p>
+    <p class="section-foot">Gesucht werden nur Verbindungen im Deutschlandticket mit Regionalzug, S-Bahn und Tram – ohne Bus. ICE/IC stehen oben unter „ICE/IC · nächste 10 Tage“.</p>
   </section>
 
   <section class="trip-results" id="trRes"></section>
@@ -4274,7 +4298,7 @@
     SUBURBAN: '#408335', METRO: '#408335', SUBWAY: '#1455c0', TRAM: '#d6001c', BUS: '#0069b4', COACH: '#73d700', FERRY: '#0098d4'
   });
   Object.assign(MOT_NAME, { TRAM: 'Tram', BUS: 'Bus', FERRY: 'Fähre' });
-  const train = Object.assign({ dir: 'DL', lpz: 'jp', fvFilter: 'both' }, store.get('train', {}));
+  const train = Object.assign({ dir: 'DL', lpz: 'jp', fvFilter: 'both', reBuf: 15 }, store.get('train', {}));
   const saveTrain = () => store.set('train', train);
 
   function decodePolyline(str, precision = 7) {
@@ -4375,8 +4399,20 @@
   const localInput = (d) => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
   tr.when.value = localInput(new Date());
   $('#trNow').addEventListener('click', () => { tr.when.value = localInput(new Date()); });
-  $('#trBuf').checked = !!train.re15;
-  $('#trBuf').addEventListener('change', (e) => { train.re15 = e.target.checked; saveTrain(); });
+  // Minuten vor dem RE 50 am Bahnhof (Standard 15)
+  const bufIn = $('#trBufMin');
+  function paintBuf() {
+    $('#trBuf').checked = !!train.re15;
+    $('#trBufRow').hidden = !train.re15;
+    bufIn.value = train.reBuf;
+    $('#trBufSub').textContent = train.reBuf + ' Min. vor dem RE 50 – notfalls eine Tram früher';
+  }
+  const setBuf = (v) => { train.reBuf = clamp(isNaN(v) ? 0 : v, 0, 60); saveTrain(); paintBuf(); };
+  $('#trBuf').addEventListener('change', (e) => { train.re15 = e.target.checked; saveTrain(); paintBuf(); });
+  bufIn.addEventListener('change', () => setBuf(parseInt(bufIn.value, 10)));
+  $('#trBufMinus').addEventListener('click', () => setBuf(train.reBuf - 5));
+  $('#trBufPlus').addEventListener('click', () => setBuf(train.reBuf + 5));
+  paintBuf();
 
   function endpoints() {
     const L = PLACES[train.lpz], D = PLACES.dresden;
@@ -4390,7 +4426,7 @@
   }
 
   // Verkehrsmittel im Deutschlandticket (kein ICE/IC, kein Fernbus)
-  const DT_MODES = 'TRAM,BUS,SUBWAY,METRO,SUBURBAN,REGIONAL_RAIL,REGIONAL_FAST_RAIL,FERRY';
+  const DT_MODES = 'TRAM,SUBWAY,METRO,SUBURBAN,REGIONAL_RAIL,REGIONAL_FAST_RAIL,FERRY';   // ohne Bus
   const RELAX_MIN = 5;
   let trShown = [], trCursor = { prev: null, next: null }, trLabels = null;
   function baseParams() {
@@ -4401,9 +4437,9 @@
     return params;
   }
   const viaHbf = (x) => train.dir !== 'DL' || x.rides.some((r) => /RAIL/.test(r.type) && /^Dresden Hbf/.test(r.from)) || !x.rides.some((r) => /RAIL/.test(r.type));
-  const usable = (x) => !x.coach && x.dep && x.arr && !x.rides.some((r) => r.fern) && viaHbf(x);
-  // ----- 15 Min. vor dem Regionalzug (RE 50) am Bahnhof -----
-  const RE_BUF = 15;
+  const usable = (x) => !x.coach && x.dep && x.arr && !x.rides.some((r) => r.fern || r.type === 'BUS') && viaHbf(x);
+  // ----- X Min. vor dem Regionalzug (RE 50) am Bahnhof -----
+  const reBuf = () => train.reBuf;
   const firstRegio = (x) => x.rides.find((r) => /REGIONAL/.test(r.type));
   // Wie viele Minuten ist man vor Abfahrt des Regionalzugs am Bahnhof?
   function bufferOf(x) {
@@ -4419,20 +4455,20 @@
   const isoMs = (t) => new Date(t).getTime();
   async function ensureBuffer(x) {
     const m = firstRegio(x), buf = bufferOf(x);
-    if (!m || buf === null || buf >= RE_BUF) return x;
+    if (!m || buf === null || buf >= reBuf()) return x;
     const raw = x.raw, idx = raw.legs.findIndex((l) => /REGIONAL/.test(l.mode) && isoMs(l.startTime) === m.dep.getTime());
     if (idx < 0) return x;
     const prevRide = x.rides[x.rides.indexOf(m) - 1];
     let combined;
     if (!prevRide) {
       // nur Fußweg zum Bahnhof: einfach früher losgehen
-      const shift = (RE_BUF - buf) * 60000;
+      const shift = (reBuf() - buf) * 60000;
       const mv = (t) => (t ? new Date(isoMs(t) - shift).toISOString() : t);
       combined = { legs: raw.legs.map((l, k) => (k < idx ? Object.assign({}, l, { startTime: mv(l.startTime), endTime: mv(l.endTime), scheduledStartTime: mv(l.scheduledStartTime) }) : l)) };
     } else {
-      // Anreise zum Bahnhof neu suchen: Ankunft spätestens 15 Min. vor Abfahrt des Regionalzugs
+      // Anreise zum Bahnhof neu suchen: Ankunft spätestens X Min. vor Abfahrt des Regionalzugs
       const station = /^Dresden/.test(m.from) ? HBF.dresden : HBF.leipzig;
-      const latest = m.dep.getTime() - RE_BUF * 60000;
+      const latest = m.dep.getTime() - reBuf() * 60000;
       const j = await motis('plan', { fromPlace: endpoints().from.place, toPlace: station, arriveBy: 'true', time: new Date(latest).toISOString(), transitModes: DT_MODES, numItineraries: '4' });
       const acc = (j.itineraries || []).filter((it) => isoMs(it.endTime) <= latest + 30000 && !it.legs.some((l) => FERN.includes(l.mode) || l.mode === 'COACH'))
         .sort((a, b) => isoMs(b.startTime) - isoMs(a.startTime))[0];
@@ -4449,9 +4485,28 @@
     const m = firstRegio(x), b = bufferOf(x);
     if (!m) return '';
     const name = esc(m.line || 'Regionalzug');
-    if (x.bufMissing) return '<div class="buf-tag warn">⚠︎ Keine frühere Anreise gefunden – nur ' + b + ' Min. vor dem ' + name + '</div>';
+    if (x.bufMissing || (b !== Infinity && b < reBuf())) return '<div class="buf-tag warn">⚠︎ Keine frühere Anreise gefunden – nur ' + b + ' Min. vor dem ' + name + '</div>';
     return '<div class="buf-tag">⏱ ' + (b === Infinity ? 'Start am Bahnhof' : b + ' Min. vor dem ' + name + ' am Bahnhof')
       + (x.bufShifted > 0 ? ' · ' + x.bufShifted + ' Min. früher los' : '') + '</div>';
+  }
+
+  // ----- Auslastung des Regionalzugs: Schätzung nach Wochentag und Uhrzeit -----
+  // (VVO meldet für Züge keine Auslastung, die DB-Schnittstellen sind gesperrt)
+  const OCC = [null, ['gering', 'Viele Plätze frei'], ['mittel', 'Meist Sitzplätze frei'], ['hoch', 'Sitzplatz eher knapp'], ['sehr hoch', 'Oft Stehplätze']];
+  function occLevel(t) {
+    const d = t.getDay(), h = t.getHours() + t.getMinutes() / 60;
+    if (h < 5 || h >= 22) return 1;
+    if ((d === 5 && h >= 12 && h < 20) || (d === 0 && h >= 14 && h < 21) || (d === 1 && h < 9)) return 4;   // Wochenendpendler
+    if (d >= 1 && d <= 5 && ((h >= 6 && h < 9) || (h >= 15 && h < 19))) return 3;                         // Berufsverkehr
+    if (h >= 9 && h < 20) return 2;
+    return 1;
+  }
+  function occHtml(x) {
+    const m = firstRegio(x); if (!m) return '';
+    const lv = occLevel(m.dep), o = OCC[lv];
+    return '<div class="occ occ-' + lv + '" title="Geschätzt nach Wochentag und Uhrzeit – echte Werte zeigt der DB Navigator">'
+      + '<span class="occ-bars" aria-hidden="true">' + [1, 2, 3, 4].map((i) => '<i' + (i <= lv ? ' class="on"' : '') + '></i>').join('') + '</span>'
+      + '<span>Auslastung ' + esc(m.line || 'Regionalzug') + ': <b>' + o[0] + '</b> · ' + o[1] + ' <small>(Schätzung)</small></span></div>';
   }
 
   async function trainSearch(cursorDir) {
@@ -4524,9 +4579,19 @@
         dh.textContent = x.dep.toDateString() === today ? 'Heute' : x.dep.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
         tr.res.appendChild(dh);
       }
-      x.extraHtml = (x.relaxed ? '<div class="relaxed-tag">Entspannte Variante · ' + x.relaxed + '</div>' : '') + bufferHtml(x) + dticketHtml(x) + relaxHtml(x);
+      x.extraHtml = (x.relaxed ? '<div class="relaxed-tag">Entspannte Variante · ' + x.relaxed + '</div>' : '')
+        + (x.minimized ? '<div class="mini-tag">Ursprüngliche Verbindung · knapper Umstieg – antippen zum Anzeigen</div>' : '')
+        + bufferHtml(x) + occHtml(x) + dticketHtml(x) + relaxHtml(x);
       const c = tripCard(x, x.dep.toDateString() === today, null, null);
-      if (x.relaxed) c.classList.add('relaxed');
+      if (x.relaxed) {
+        c.classList.add('relaxed');
+        // groß und gleich mit allen Details
+        c.querySelector('.trip-legs').hidden = false; c.classList.add('open'); c.setAttribute('aria-expanded', 'true');
+      }
+      if (x.minimized) {
+        c.classList.add('mini');
+        c.addEventListener('click', () => { x.minimized = false; c.classList.remove('mini'); });
+      }
       const rb = c.querySelector('.relax-btn');
       if (rb) rb.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -4537,7 +4602,7 @@
           if (trShown.some((z) => tripKey(z) === tripKey(y))) { rb.textContent = 'Entspannte Variante steht schon in der Liste'; return; }
           const earlier = Math.round((x.dep - y.dep) / 60000);
           y.relaxed = earlier > 0 ? earlier + ' Min. früher los, gleiche Ankunft' : 'Umstiege mit mehr Puffer';
-          x.hasRelaxed = true;
+          x.hasRelaxed = true; x.minimized = true;
           trShown.push(y); trShown.sort((a, b) => a.dep - b.dep);
           renderTrainResults(tripKey(y));
         } catch (err) { rb.disabled = false; rb.textContent = 'Keine Verbindung – nochmal versuchen'; }

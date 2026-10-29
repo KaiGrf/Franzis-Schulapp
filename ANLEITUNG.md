@@ -132,11 +132,16 @@ Reiter **Bahn** in der Tab-Leiste:
   oder **Hbf**, in Dresden immer **Voglerstraße 46**. Richtung Leipzig geht es immer über **Dresden Hbf**.
   Gesucht werden **nur Verbindungen im Deutschlandticket** (Regionalzüge, S-Bahn, Tram, Bus) – ICE/IC
   stehen im Bereich oben. Ergebnisse mit Gleisen, Umstiegen (unter 5 Min. rot), Karte und **↑ Früher / ↓ Später**.
-- **15 Min. vor dem RE 50 am Bahnhof** (Schalter in der Suche): Ist man laut Verbindung später als
-  15 Minuten vor Abfahrt des Regionalzugs am Bahnhof, sucht die App eine frühere Tram bzw. lässt einen
-  früher losgehen – der Zug bleibt derselbe. Jede Verbindung zeigt den Puffer an.
+- **Rechtzeitig am Bahnhof** (Schalter in der Suche): Ist man laut Verbindung später als die eingestellten
+  Minuten (Standard 15, mit − / + änderbar) vor Abfahrt des RE 50 am Bahnhof, sucht die App eine frühere
+  Tram bzw. lässt einen früher losgehen – der Zug bleibt derselbe. Jede Verbindung zeigt den Puffer an.
+- **Ohne Bus:** Gesucht wird nur mit Regionalzug, S-Bahn und Tram.
+- **Auslastung:** Jede Verbindung zeigt die zu erwartende Auslastung des RE 50 – eine **Schätzung** nach
+  Wochentag und Uhrzeit (z. B. Freitagnachmittag, Sonntagabend, Montagmorgen sehr voll). Echte
+  Auslastungsdaten gibt es über keine offene Schnittstelle; die zeigt nur der DB Navigator.
 - **Entspannter umsteigen:** Bei einer Verbindung mit knappem Umstieg (unter 5 Min.) lädt
-  **„Entspannter umsteigen – früher los“** gezielt dieselben Linien eine Fahrt früher.
+  **„Entspannter umsteigen – früher los“** gezielt dieselben Linien eine Fahrt früher. Die entspannte
+  Variante erscheint groß und aufgeklappt, die ursprüngliche Verbindung wird klein (antippen zeigt sie wieder).
 - **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden Hbf und
   Leipzig Hbf in beide Richtungen. Preise kann die App nicht selbst abfragen (die Bahn bietet dafür keine
   offene Schnittstelle). Deshalb:
@@ -154,7 +159,7 @@ Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v20';` hochzählen (`'v21'`, `'v22'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v21';` hochzählen (`'v22'`, `'v23'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
