@@ -4024,7 +4024,7 @@
       const R = data[k], G = data[k + 1], B = data[k + 2];
       const mx = Math.max(R, G, B), mn = Math.min(R, G, B);
       const sat = mx ? (mx - mn) / mx : 0, v = mx / 255;
-      if (sat > 0.35 && v > 0.35) { r += R; g += G; b += B; nc++; }
+      if (sat > 0.25 && v > 0.35) { r += R; g += G; b += B; nc++; }
       else if (v < 0.45) nd++;
     }
     if (nc < Math.max(6, nd * 0.6)) return 'none';
@@ -4052,7 +4052,7 @@
       const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
       const v = mx / 255, s = mx ? (mx - mn) / mx : 0;
-      ink[i] = v < 0.55 || (s > 0.3 && v > 0.25) ? 1 : 0;
+      ink[i] = v < 0.55 || (s > 0.18 && mn < 170) ? 1 : 0;
     }
     for (let y = 0; y < H; y++) { let n = 0; for (let x = 0; x < W; x++) n += ink[y * W + x]; if (n > W * 0.4) ink.fill(0, y * W, y * W + W); }
     for (let x = 0; x < W; x++) { let n = 0; for (let y = 0; y < H; y++) n += ink[y * W + x]; if (n > H * 0.4) for (let y = 0; y < H; y++) ink[y * W + x] = 0; }
@@ -4081,17 +4081,20 @@
   }
 
   // Tabelle aus den erkannten Wörtern rekonstruieren: Spalten über die Wochentage, Zeilen über Stundennummern bzw. Uhrzeiten
-  function parseTimetableWords(words, canvas) {
+  function parseTimetableWords(words) {
     const W = words.map((w) => ({ t: (w.text || '').trim(), x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 }))
       .filter((w) => w.t).map((w) => ({ ...w, cx: (w.x0 + w.x1) / 2, cy: (w.y0 + w.y1) / 2 }));
 
     // Wochentage (auch aus zwei Wortteilen zusammengesetzt)
     const heads = [null, null, null, null, null];
     const cand = W.slice().sort((a, b) => a.cy - b.cy || a.x0 - b.x0);
+    // erst eindeutige Treffer, dann aus zwei Wortteilen (rechter Nachbar, beide mit Buchstaben – keine Striche „|“)
+    cand.forEach((w) => { const d = matchDay(w.t); if (d >= 0 && !heads[d]) heads[d] = w; });
     cand.forEach((w, k) => {
-      let d = matchDay(w.t), box = w;
+      let d = -1, box = w;
       const nx = cand[k + 1];
-      if (d < 0 && nx && Math.abs(nx.cy - w.cy) < (w.y1 - w.y0) && nx.x0 - w.x1 < (w.y1 - w.y0) * 1.5) {
+      if (nx && /[a-zäöü]{2}/i.test(w.t) && /[a-zäöü]/i.test(nx.t) && Math.abs(nx.cy - w.cy) < (w.y1 - w.y0)
+        && nx.x0 > w.x0 && nx.x0 - w.x1 < (w.y1 - w.y0) * 1.5) {
         d = matchDay(w.t + nx.t);
         if (d >= 0) box = { x0: w.x0, x1: nx.x1, y0: Math.min(w.y0, nx.y0), y1: Math.max(w.y1, nx.y1), cx: (w.x0 + nx.x1) / 2, cy: (w.cy + nx.cy) / 2 };
       }
@@ -4117,52 +4120,127 @@
     const timeTok = [];
     leftWords.forEach((w) => [...w.t.matchAll(/(\d{1,2})[:.](\d{2})(\s*-)?/g)].forEach((m) =>
       timeTok.push({ t: m[1].padStart(2, '0') + ':' + m[2], dash: !!m[3], cy: w.cy })));
-    const numToks = leftWords.filter((w) => /^\d{1,2}$/.test(w.t) && +w.t >= 1 && +w.t <= 12);
+    const numToks = leftWords.filter((w) => /^\d{1,2}$/.test(w.t) && +w.t >= 0 && +w.t <= 12);
 
+    const toM = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const plus = (t, k) => { const m = toM(t) + k; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+    const toks = timeTok.filter((x, k) => !timeTok.slice(0, k).some((y) => y.t === x.t && Math.abs(y.cy - x.cy) < lineH));
+    const starts = toks.filter((x) => x.dash);
+    // Format „eine Uhrzeit pro Zeile“: Beginn oben in der Zeile, darunter eine schmale Pausenzeile mit dem Ende.
+    // Erkennbar daran, dass Uhrzeiten mit ≥ 30 Min. Abstand viele Textzeilen auseinander liegen.
+    const far = toks.slice(1).map((x, k) => ({ g: x.cy - toks[k].cy, dt: toM(x.t) - toM(toks[k].t) })).filter((x) => x.dt >= 30).map((x) => x.g).sort((x, y) => x - y);
+    const single = starts.length < 2 && far.length >= 2 && far[Math.floor(far.length / 2)] > lineH * 3;
     let rows = [];
-    // a) Über Uhrzeiten: Beginn (mit „-“) + Ende darunter
-    const starts = timeTok.filter((x) => x.dash);
-    const useStarts = starts.length >= 2 ? starts : timeTok.filter((_, k) => k % 2 === 0);
-    useStarts.forEach((s) => {
-      const end = timeTok.find((x) => x.cy > s.cy && x.cy - s.cy < lineH * 2.2 && x !== s && !x.dash);
-      rows.push({ cy: end ? (s.cy + end.cy) / 2 : s.cy + lineH * 0.6, start: s.t, end: end ? end.t : '' });
-    });
-    // b) Ohne Uhrzeiten: über die Stundennummern
-    if (rows.length < 2) rows = numToks.map((w) => ({ cy: w.cy, start: '', end: '' }));
+    if (single) {
+      const gaps = toks.slice(1).map((x, k) => x.cy - toks[k].cy), maxGap = Math.max(...gaps);
+      const isBreak = (k) => k < toks.length - 1 && gaps[k] < maxGap * 0.55 && toM(toks[k + 1].t) - toM(toks[k].t) <= 30;
+      const lessons = toks.map((_, k) => k).filter((k) => !isBreak(k));
+      const hs = lessons.filter((k) => k < toks.length - 1).map((k) => gaps[k]).sort((x, y) => x - y);
+      const rowH = hs.length ? hs[Math.floor(hs.length / 2)] : lineH * 5;
+      lessons.forEach((k) => {
+        const nx = toks[k + 1], top = toks[k].cy - lineH * 0.9;
+        const bottom = nx ? nx.cy - lineH * 0.9 : top + rowH;
+        rows.push({ top, bottom, cy: (top + bottom) / 2, start: toks[k].t, end: nx ? nx.t : plus(toks[k].t, 45) });
+      });
+    } else {
+      // a) Über Uhrzeiten: Beginn (mit „-“) + Ende darunter
+      const useStarts = starts.length >= 2 ? starts : toks.filter((_, k) => k % 2 === 0);
+      useStarts.forEach((st) => {
+        const end = toks.find((x) => x.cy > st.cy && x.cy - st.cy < lineH * 2.2 && x !== st && !x.dash);
+        rows.push({ cy: end ? (st.cy + end.cy) / 2 : st.cy + lineH * 0.6, start: st.t, end: end ? end.t : '' });
+      });
+      // b) Ohne Uhrzeiten: über die Stundennummern
+      if (rows.length < 2) rows = numToks.filter((w) => +w.t >= 1).map((w) => ({ cy: w.cy, start: '', end: '' }));
+      rows.sort((x, y) => x.cy - y.cy);
+      rows.forEach((r, k) => {
+        r.top = k === 0 ? headerY : (rows[k - 1].cy + r.cy) / 2;
+        r.bottom = k === rows.length - 1 ? r.cy + (r.cy - r.top) : (r.cy + rows[k + 1].cy) / 2;
+      });
+    }
     if (rows.length < 2) throw new Error('rows');
-    rows.sort((a, b) => a.cy - b.cy);
-    rows.forEach((r, k) => {
-      r.top = k === 0 ? headerY : (rows[k - 1].cy + r.cy) / 2;
-      r.bottom = k === rows.length - 1 ? r.cy + (r.cy - r.top) : (r.cy + rows[k + 1].cy) / 2;
-    });
-    // Stundennummer: erkannte Zahl in der Zeile, sonst fortlaufend
-    let firstN = 1;
-    const anchor = rows.findIndex((r) => numToks.some((w) => w.cy >= r.top && w.cy < r.bottom));
-    if (anchor >= 0) firstN = Number(numToks.find((w) => w.cy >= rows[anchor].top && w.cy < rows[anchor].bottom).t) - anchor;
-    rows.forEach((r, k) => { r.n = Math.max(1, firstN + k); });
-    const rowAt = (y) => rows.find((r) => y >= r.top && y < r.bottom);
+    // erkannte Stundennummer je Zeile (z. B. „0“ für eine Frühstunde)
+    rows.forEach((r) => { const w = numToks.find((t) => t.cy >= r.top && t.cy < r.bottom); r.num = w ? Number(w.t) : null; });
 
-    const maxN = Math.max(...rows.map((r) => r.n));
-    const periods = Array.from({ length: maxN }, () => ({ start: '', end: '' }));
-    rows.forEach((r) => { periods[r.n - 1] = { start: r.start, end: r.end }; });
+    // Spaltengrenzen der Wochentage
+    const edges = [leftEdge];
+    for (let d = 0; d < 4; d++) edges.push((cx[d] + cx[d + 1]) / 2);
+    edges.push(cx[4] + (cx[4] - cx[3]) / 2);
 
-    // Zellen: Wort → nächstgelegene Tagesspalte + Zeile
+    // Wörter der ganzen Seite je Zelle (Rückfall, falls die Zellen-Erkennung nichts liefert)
     const groups = {};
     W.filter((w) => w.cy > headerY && w.cx >= leftEdge).forEach((w) => {
-      if (/^[|_\-–—.,:;'"“”]+$/.test(w.t)) return;
-      const r = rowAt(w.cy); if (!r) return;
+      if (/^[|_\-–—.,:;'"“”\[\]]+$/.test(w.t)) return;
+      const ri = rows.findIndex((r) => w.cy >= r.top && w.cy < r.bottom); if (ri < 0) return;
       let d = 0; cx.forEach((x, k) => { if (Math.abs(w.cx - x) < Math.abs(w.cx - cx[d])) d = k; });
-      (groups[d + '-' + (r.n - 1)] = groups[d + '-' + (r.n - 1)] || []).push(w);
+      (groups[d + '-' + ri] = groups[d + '-' + ri] || []).push(w);
     });
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const cells = {};
-    Object.entries(groups).forEach(([key, ws]) => {
-      const lh = Math.max(8, ws.reduce((s, w) => s + (w.y1 - w.y0), 0) / ws.length * 0.7);
-      ws.sort((a, b) => Math.round(a.cy / lh) - Math.round(b.cy / lh) || a.x0 - b.x0);
-      const text = ws.map((w) => w.t).join(' ').replace(/[|_]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!text || text.length < 2) return;
-      const color = sampleColor(ctx, Math.min(...ws.map((w) => w.x0)), Math.min(...ws.map((w) => w.y0)), Math.max(...ws.map((w) => w.x1)), Math.max(...ws.map((w) => w.y1)));
-      cells[key] = { text, color };
+    return { rows, edges, groups };
+  }
+
+  // Jede Zelle einzeln lesen (Blocktext) – erkennt auch einzelne Ziffern wie Raumnummern zuverlässig
+  const meaningful = (t) => t.replace(/[^0-9A-Za-zÄÖÜäöüß]/g, '').length >= 2;
+  const cleanCell = (t) => t.replace(/[|_\[\]{}“”"]/g, ' ').replace(/\s+/g, ' ').trim().split(' ')
+    .filter((w) => /[0-9A-Za-zÄÖÜäöüß]/.test(w)).join(' ');
+  async function readTimetableCells(grid, worker, canvas, bin, onProgress) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true }), bctx = bin.getContext('2d', { willReadFrequently: true });
+    const { rows, edges, groups } = grid;
+    const jobs = [], struck = new Set();
+    rows.forEach((r, ri) => [0, 1, 2, 3, 4].forEach((d) => {
+      const x0 = Math.round(edges[d] + 6), x1 = Math.round(edges[d + 1] - 6), y0 = Math.round(r.top + 3), y1 = Math.round(r.bottom - 3);
+      if (x1 - x0 < 10 || y1 - y0 < 10) return;
+      const w = x1 - x0, h = y1 - y0, px = bctx.getImageData(x0, y0, w, h).data;
+      const colHit = new Uint8Array(w), rowHit = new Uint8Array(h);
+      let ink = 0;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (px[(y * w + x) * 4] < 128) { ink++; colHit[x] = 1; rowHit[y] = 1; }
+      if (ink <= 40) return;
+      // Diagonaler Strich (durchgestrichene Zelle): Tinte über fast die ganze Breite UND Höhe
+      const cov = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+      if (cov(colHit) > 0.85 && cov(rowHit) > 0.85) { struck.add(d + '-' + ri); return; }
+      // Ausschnitt so weit verbreitern, dass über den Rand ragende Wörter („Mentorenstunde“) ganz drin sind
+      const own = groups[d + '-' + ri] || [];
+      const ex0 = Math.max(0, Math.round(Math.min(x0, ...own.map((o) => o.x0 - 4))));
+      const ex1 = Math.min(bin.width, Math.round(Math.max(x1, ...own.map((o) => o.x1 + 4))));
+      jobs.push({ ri, d, x0: ex0, y0, x1: ex1, y1 });
+    }));
+    const allWords = Object.entries(groups).flatMap(([key, ws]) => ws.map((w) => ({ key, w })));
+    await worker.setParameters({ tessedit_pageseg_mode: '6' });
+    const raw = {};
+    for (let k = 0; k < jobs.length; k++) {
+      const j = jobs[k], c = document.createElement('canvas');
+      c.width = j.x1 - j.x0 + 40; c.height = j.y1 - j.y0 + 40;
+      const cc = c.getContext('2d'); cc.fillStyle = '#fff'; cc.fillRect(0, 0, c.width, c.height);
+      cc.drawImage(bin, j.x0, j.y0, j.x1 - j.x0, j.y1 - j.y0, 20, 20, j.x1 - j.x0, j.y1 - j.y0);
+      // Wörter der Nachbarzellen, die hereinragen, abdecken
+      allWords.forEach(({ key, w }) => {
+        if (key === j.d + '-' + j.ri || w.x1 < j.x0 || w.x0 > j.x1 || w.y1 < j.y0 || w.y0 > j.y1) return;
+        cc.fillRect(w.x0 - j.x0 + 18, w.y0 - j.y0 + 18, w.x1 - w.x0 + 4, w.y1 - w.y0 + 4);
+      });
+      const { data } = await worker.recognize(c);
+      let text = cleanCell((data.text || '').replace(/\n+/g, ' '));
+      let ws = (data.words || []).filter((w) => /[0-9A-Za-zÄÖÜäöüß]/.test(w.text)).map((w) => ({ x0: w.bbox.x0 - 20 + j.x0, y0: w.bbox.y0 - 20 + j.y0, x1: w.bbox.x1 - 20 + j.x0, y1: w.bbox.y1 - 20 + j.y0 }));
+      const g = groups[j.d + '-' + j.ri];
+      if (!meaningful(text) && g) { text = cleanCell(g.map((w) => w.t).join(' ')); ws = g; }
+      raw[j.d + '-' + j.ri] = { text, ws };
+      onProgress((k + 1) / jobs.length);
+    }
+    // Erste Zeile ohne Unterricht, aber mit Strichen (durchgestrichene Frühstunde „0“) überspringen
+    const rowCells = (ri) => [0, 1, 2, 3, 4].map((d) => raw[d + '-' + ri]).filter(Boolean);
+    let skip = 0;
+    const struckRow = (ri) => [0, 1, 2, 3, 4].filter((d) => struck.has(d + '-' + ri)).length >= 3 && !rowCells(ri).some((c) => meaningful(c.text));
+    if (rows[0].num === 0 || struckRow(0)) skip = 1;
+    const anchor = rows.findIndex((r, ri) => ri >= skip && r.num >= 1);
+    const firstN = anchor >= 0 ? rows[anchor].num - (anchor - skip) : 1;
+    const periods = [], cells = {};
+    rows.slice(skip).forEach((r, k) => {
+      const n = Math.max(1, firstN + k);
+      while (periods.length < n) periods.push({ start: '', end: '' });
+      periods[n - 1] = { start: r.start, end: r.end };
+      [0, 1, 2, 3, 4].forEach((d) => {
+        const c = raw[d + '-' + (k + skip)];
+        if (!c || !meaningful(c.text)) return;
+        const color = c.ws.length ? sampleColor(ctx, Math.min(...c.ws.map((w) => w.x0)), Math.min(...c.ws.map((w) => w.y0)), Math.max(...c.ws.map((w) => w.x1)), Math.max(...c.ws.map((w) => w.y1))) : 'none';
+        cells[d + '-' + (n - 1)] = { text: c.text.slice(0, 60), color };
+      });
     });
     // Schreibweisen vereinheitlichen („En 5b“ + „EN 5b“ → häufigere Variante)
     const variants = {};
@@ -4170,6 +4248,15 @@
     Object.values(cells).forEach((c) => {
       const v = variants[c.text.toLowerCase()];
       c.text = Object.keys(v).sort((a, b) => v[b] - v[a] || (b === b.toUpperCase()) - (a === a.toUpperCase()))[0];
+    });
+    // Fast gleiche Einträge („H 63 En“ / „H 6a En“) angleichen – lieber die Variante mit Klassenkürzel wie „6a“
+    const count = {};
+    Object.values(cells).forEach((c) => { count[c.text] = (count[c.text] || 0) + 1; });
+    const classy = (t) => t.split(' ').filter((w) => /^\d{1,2}[a-zA-Z]$/.test(w)).length;
+    Object.values(cells).forEach((c) => {
+      if (c.text.length < 3) return;
+      const near = Object.keys(count).filter((t) => classy(t) > classy(c.text) && editDistance(t.toLowerCase(), c.text.toLowerCase()) <= 1);
+      c.text = near.sort((a, b) => count[b] - count[a])[0] || c.text;
     });
     return { periods, cells };
   }
@@ -4238,18 +4325,28 @@
     try {
       const [canvas] = await Promise.all([loadCanvas(draftImgUrl), loadTesseract()]);
       pl.draftStatus.textContent = 'Sprachdaten werden geladen (nur beim ersten Mal)';
+      let cellPhase = false;
       const worker = await Tesseract.createWorker('deu', 1, {
         logger: (m) => {
-          if (m.status === 'recognizing text') {
+          if (m.status === 'recognizing text' && !cellPhase) {
             pl.draftStatus.textContent = 'Text wird erkannt … ' + Math.round(m.progress * 100) + ' %';
             pl.draftBar.style.transform = `scaleX(${m.progress})`;
           }
         }
       });
       await worker.setParameters({ tessedit_pageseg_mode: '11' });   // verstreuter Text – passt zu Tabellen
-      const { data } = await worker.recognize(binarizeForOcr(canvas));
-      await worker.terminate();
-      const parsed = parseTimetableWords(data.words || [], canvas);
+      const bin = binarizeForOcr(canvas);
+      const { data } = await worker.recognize(bin);
+      let parsed;
+      try {
+        const grid = parseTimetableWords(data.words || []);
+        cellPhase = true;
+        pl.draftStatus.textContent = 'Stunden werden gelesen …';
+        parsed = await readTimetableCells(grid, worker, canvas, bin, (f) => {
+          pl.draftStatus.textContent = 'Stunden werden gelesen … ' + Math.round(f * 100) + ' %';
+          pl.draftBar.style.transform = `scaleX(${f})`;
+        });
+      } finally { await worker.terminate(); }
       p.cells = parsed.cells;
       if (parsed.periods.some((x) => x.start)) p.periods = parsed.periods.map((x, i) => (x.start ? x : (p.periods[i] || x)));
       const n = Object.keys(p.cells).length;

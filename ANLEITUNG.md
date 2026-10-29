@@ -159,7 +159,7 @@ Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v21';` hochzählen (`'v22'`, `'v23'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v22';` hochzählen (`'v23'`, `'v24'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
