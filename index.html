@@ -4550,7 +4550,7 @@
     return Math.round((m.dep - at) / 60000);
   }
   const isoMs = (t) => new Date(t).getTime();
-  async function ensureBuffer(x) {
+  async function ensureBuffer(x, extra) {
     const m = firstRegio(x), buf = bufferOf(x);
     if (!m || buf === null || buf >= reBuf()) return x;
     const raw = x.raw, idx = raw.legs.findIndex((l) => /REGIONAL/.test(l.mode) && isoMs(l.startTime) === m.dep.getTime());
@@ -4566,7 +4566,7 @@
       // Anreise zum Bahnhof neu suchen: Ankunft spätestens X Min. vor Abfahrt des Regionalzugs
       const station = /^Dresden/.test(m.from) ? HBF.dresden : HBF.leipzig;
       const latest = m.dep.getTime() - reBuf() * 60000;
-      const j = await motis('plan', { fromPlace: endpoints().from.place, toPlace: station, arriveBy: 'true', time: new Date(latest).toISOString(), transitModes: DT_MODES, numItineraries: '4' });
+      const j = await motis('plan', Object.assign({ fromPlace: endpoints().from.place, toPlace: station, arriveBy: 'true', time: new Date(latest).toISOString(), transitModes: DT_MODES, numItineraries: '4' }, extra));
       const acc = (j.itineraries || []).filter((it) => isoMs(it.endTime) <= latest + 30000 && !it.legs.some((l) => FERN.includes(l.mode) || l.mode === 'COACH'))
         .sort((a, b) => isoMs(b.startTime) - isoMs(a.startTime))[0];
       if (!acc) { x.bufMissing = true; return x; }
@@ -4584,7 +4584,7 @@
     const name = esc(m.line || 'Regionalzug');
     if (x.bufMissing || (b !== Infinity && b < reBuf())) return '<div class="buf-tag warn">⚠︎ Keine frühere Anreise gefunden – nur ' + b + ' Min. vor dem ' + name + '</div>';
     return '<div class="buf-tag">⏱ ' + (b === Infinity ? 'Start am Bahnhof' : b + ' Min. vor dem ' + name + ' am Bahnhof')
-      + (x.bufShifted > 0 ? ' · ' + x.bufShifted + ' Min. früher los' : '') + '</div>';
+      + (x.bufShifted > 0 && !x.relaxed ? ' · ' + x.bufShifted + ' Min. früher los' : '') + '</div>';
   }
 
   // ----- Auslastung des Regionalzugs: Schätzung nach Wochentag und Uhrzeit -----
@@ -4641,8 +4641,14 @@
     const lines = (z) => z.rides.map((r) => r.line).join('>');
     const sameTrain = cands.filter((y) => { const n = mainRide(y); return n && m && n.line === m.line && Math.abs(n.dep - m.dep) < 60000; });
     const sameLines = sameTrain.filter((y) => lines(y) === lines(x) && y.dep < x.dep);
-    const pick = sameLines.length ? sameLines : sameTrain.length ? sameTrain : cands;
-    return pick.sort((a, b) => b.dep - a.dep)[0] || null;
+    const pick = (sameLines.length ? sameLines : sameTrain.length ? sameTrain : cands).sort((a, b) => b.dep - a.dep);
+    if (!train.re15) return pick[0] || null;
+    // auch hier rechtzeitig am Bahnhof sein (Anreise mit entspannten Umstiegen)
+    for (const y of pick.slice(0, 4)) {
+      const z = await ensureBuffer(y, relaxP).catch(() => y);
+      if (!z.bufMissing && !z.transfers.some((t) => t.short)) return z;
+    }
+    return pick[0] ? await ensureBuffer(pick[0], relaxP).catch(() => pick[0]) : null;
   }
   function relaxHtml(x) {
     if (x.relaxed || x.hasRelaxed || !x.transfers.some((t) => t.short)) return '';

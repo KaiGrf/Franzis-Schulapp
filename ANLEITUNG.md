@@ -142,6 +142,7 @@ Reiter **Bahn** in der Tab-Leiste:
 - **Entspannter umsteigen:** Bei einer Verbindung mit knappem Umstieg (unter 5 Min.) lädt
   **„Entspannter umsteigen – früher los“** gezielt dieselben Linien eine Fahrt früher. Die entspannte
   Variante erscheint groß und aufgeklappt, die ursprüngliche Verbindung wird klein (antippen zeigt sie wieder).
+  Ist „Rechtzeitig am Bahnhof“ an, hält auch die entspannte Variante den eingestellten Puffer vor dem RE 50 ein.
 - **ICE/IC · nächste 10 Tage** (oben, zum Aufklappen): alle direkten ICE/IC zwischen Dresden Hbf und
   Leipzig Hbf in beide Richtungen. Preise kann die App nicht selbst abfragen (die Bahn bietet dafür keine
   offene Schnittstelle). Deshalb:
@@ -159,7 +160,7 @@ Fahrplandaten: Transitous (freie Fahrplanauskunft).
 
 Nach Änderungen an der App:
 
-1. In `sw.js` die Zeile `const VERSION = 'v22';` hochzählen (`'v23'`, `'v24'`, …).
+1. In `sw.js` die Zeile `const VERSION = 'v23';` hochzählen (`'v24'`, `'v25'`, …).
 2. Die geänderten Dateien erneut hochladen.
 
 Beim nächsten Öffnen zeigt die App **„Neue Version verfügbar – Aktualisieren“**.
